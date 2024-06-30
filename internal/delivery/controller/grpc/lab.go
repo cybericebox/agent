@@ -4,14 +4,13 @@ import (
 	"context"
 	"github.com/cybericebox/agent/internal/model"
 	"github.com/cybericebox/agent/pkg/controller/grpc/protobuf"
-	"github.com/gofrs/uuid"
 	"github.com/hashicorp/go-multierror"
 	"github.com/rs/zerolog/log"
 )
 
 type (
 	ILabService interface {
-		CreateLab(ctx context.Context, subnetMask uint32) (uuid.UUID, error)
+		CreateLab(ctx context.Context, subnetMask uint32) (string, error)
 		GetLab(ctx context.Context, id string) (*model.Lab, error)
 		DeleteLab(ctx context.Context, id string) error
 
@@ -54,7 +53,7 @@ func (a *Agent) CreateLab(ctx context.Context, request *protobuf.CreateLabReques
 	}
 
 	return &protobuf.CreateLabResponse{
-		Id: labID.String(),
+		Id: labID,
 	}, nil
 }
 
