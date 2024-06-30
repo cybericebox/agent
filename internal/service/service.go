@@ -9,6 +9,7 @@ import (
 	"github.com/cybericebox/agent/internal/service/dns"
 	"github.com/cybericebox/agent/internal/service/lab"
 	"github.com/cybericebox/wireguard/pkg/ipam"
+	"github.com/hashicorp/go-multierror"
 	"github.com/rs/zerolog/log"
 )
 
@@ -64,10 +65,12 @@ func NewService(deps Dependencies) *Service {
 func (s *Service) Test() error {
 	// test if the service is working properly
 	ctx := context.Background()
+
+	var errs error
 	// try to create a new lab
 	labID, err := s.LabService.CreateLab(ctx, 26)
 	if err != nil {
-		return fmt.Errorf("failed to create test lab: [%w]", err)
+		errs = multierror.Append(errs, fmt.Errorf("failed to create test lab: [%w]", err))
 	}
 
 	// try to add a challenge to the lab
@@ -96,17 +99,20 @@ func (s *Service) Test() error {
 			}},
 		}},
 	}}); err != nil {
-		return fmt.Errorf("failed to add test challenge to test lab: [%w]", err)
+		errs = multierror.Append(errs, fmt.Errorf("failed to add test challenge to test lab: [%w]", err))
 	}
 
 	// try to delete the challenge
 	if err = s.LabService.DeleteLabChallenges(ctx, labID, []string{"test-challenge"}); err != nil {
-		return fmt.Errorf("failed to delete test challenge from test lab: [%w]", err)
+		errs = multierror.Append(errs, fmt.Errorf("failed to delete test challenge from test lab: [%w]", err))
 	}
 
 	// try to delete the lab
 	if err = s.LabService.DeleteLab(ctx, labID); err != nil {
-		return fmt.Errorf("failed to delete test lab: [%w]", err)
+		errs = multierror.Append(errs, fmt.Errorf("failed to delete test lab: [%w]", err))
+	}
+	if errs != nil {
+		return errs
 	}
 	return nil
 }

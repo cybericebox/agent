@@ -75,9 +75,9 @@ func (s *ChallengeService) CreateChallenge(ctx context.Context, lab *model.Lab, 
 
 func (s *ChallengeService) DeleteChallenge(ctx context.Context, lab *model.Lab, challengeID string) (records []model.DNSRecordConfig, errs error) {
 	dps, err := s.infrastructure.GetDeploymentsInNamespaceBySelector(ctx, lab.ID.String(),
-		fmt.Sprintf("%s:%s", config.PlatformLabel, config.Challenge),
-		fmt.Sprintf("%s:%s", config.LabIDLabel, lab.ID.String()),
-		fmt.Sprintf("%s:%s", config.ChallengeIDLabel, challengeID),
+		fmt.Sprintf("%s=%s", config.PlatformLabel, config.Challenge),
+		fmt.Sprintf("%s=%s", config.LabIDLabel, lab.ID.String()),
+		fmt.Sprintf("%s=%s", config.ChallengeIDLabel, challengeID),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get instances in namespace by selector: [%w]", err)
