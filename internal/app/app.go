@@ -5,6 +5,7 @@ import (
 	"github.com/cybericebox/agent/internal/delivery/controller"
 	"github.com/cybericebox/agent/internal/delivery/infrastructure"
 	"github.com/cybericebox/agent/internal/service"
+	"github.com/rs/zerolog/log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -21,6 +22,11 @@ func Run() {
 			Infrastructure: infra,
 		},
 	)
+
+	// test if the service is working properly
+	if err := serv.Test(); err != nil {
+		log.Fatal().Err(err).Msg("Service initial test failed")
+	}
 
 	ctrl := controller.NewController(controller.Dependencies{
 		Config:  &cfg.Controller,
