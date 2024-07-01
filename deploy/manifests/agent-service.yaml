@@ -1,0 +1,12 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: agent
+  namespace: cybericebox
+spec:
+  ports:
+    - port: 5454
+      protocol: TCP
+      targetPort: 5454
+  selector:
+    app: agent

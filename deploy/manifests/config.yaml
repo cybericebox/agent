@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config
+  namespace: cybericebox
+data:
+  AGENT_GRPC_AUTH_KEY: "randomkey"
+  AGENT_GRPC_SIGN_KEY: "randomkey"
+  LABS_CIDR: "128.0.0.0/8"
+  POSTGRES_HOSTNAME: "hostname"
+  POSTGRES_USER: "username"
+  POSTGRES_PASSWORD: "password"
+  POSTGRES_DB: "database"
+  POSTGRES_SSL_MODE: "disable"
+

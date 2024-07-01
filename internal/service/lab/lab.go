@@ -82,7 +82,7 @@ func (s *LabService) GetLab(ctx context.Context, labID string) (*model.Lab, erro
 	return lab, nil
 }
 
-func (s *LabService) CreateLab(ctx context.Context, subnetMask uint32) (uuid.UUID, error) {
+func (s *LabService) CreateLab(ctx context.Context, subnetMask uint32) (string, error) {
 	var err error
 
 	lab := &model.Lab{
@@ -91,36 +91,36 @@ func (s *LabService) CreateLab(ctx context.Context, subnetMask uint32) (uuid.UUI
 
 	lab.CIDRManager, err = s.ipaManager.AcquireChildCIDR(ctx, subnetMask)
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("failed to acquire child cidr: [%w]", err)
+		return "", fmt.Errorf("failed to acquire child cidr: [%w]", err)
 	}
 
 	// create network
 	if err = s.infrastructure.ApplyNetwork(ctx, lab.ID.String(), lab.CIDRManager.GetCIDR(), int(subnetMask)); err != nil {
 		if err1 := s.ipaManager.ReleaseChildCIDR(ctx, lab.CIDRManager.GetCIDR()); err1 != nil {
-			return uuid.Nil, fmt.Errorf("failed to release child cidr in apply network: [%w]", err1)
+			return "", fmt.Errorf("failed to release child cidr in apply network: [%w]", err1)
 		}
-		return uuid.Nil, fmt.Errorf("failed to apply network: [%w]", err)
+		return "", fmt.Errorf("failed to apply network: [%w]", err)
 	}
 
 	labPool := lab.ID.String()
 	// create namespace
 	if err = s.infrastructure.ApplyNamespace(ctx, lab.ID.String(), &labPool); err != nil {
 		if err1 := s.ipaManager.ReleaseChildCIDR(ctx, lab.CIDRManager.GetCIDR()); err1 != nil {
-			return uuid.Nil, fmt.Errorf("failed to release child cidr in apply namespace: [%w]", err1)
+			return "", fmt.Errorf("failed to release child cidr in apply namespace: [%w]", err1)
 		}
-		return uuid.Nil, fmt.Errorf("failed to apply namespace: [%w]", err)
+		return "", fmt.Errorf("failed to apply namespace: [%w]", err)
 	}
 
 	singleIP, err := lab.CIDRManager.AcquireSingleIP(ctx)
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("failed to acquire DNS ip: [%w]", err)
+		return "", fmt.Errorf("failed to acquire DNS ip: [%w]", err)
 	}
 
 	if err = s.service.CreateDNSServer(ctx, lab.ID.String(), singleIP); err != nil {
-		return uuid.Nil, fmt.Errorf("failed to create DNS server: [%w]", err)
+		return "", fmt.Errorf("failed to create DNS server: [%w]", err)
 	}
 
-	return lab.ID, nil
+	return lab.ID.String(), nil
 }
 
 func (s *LabService) DeleteLab(ctx context.Context, labID string) error {
@@ -160,8 +160,6 @@ func (s *LabService) AddLabChallenges(ctx context.Context, labID string, challen
 
 		labRecords = append(labRecords, records...)
 	}
-
-	fmt.Println("labRecords", labRecords)
 
 	if err = s.service.RefreshDNSRecords(ctx, lab.ID.String(), labRecords, true); err != nil {
 		errs = multierror.Append(errs, fmt.Errorf("failed to refresh DNS records: [%w]", err))
