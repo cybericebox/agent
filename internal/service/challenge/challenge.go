@@ -11,6 +11,7 @@ import (
 
 type (
 	Infrastructure interface {
+		DeploymentExists(ctx context.Context, name, namespace string) (bool, error)
 		ApplyDeployment(ctx context.Context, config model.ApplyDeploymentConfig) error
 		GetDeploymentsInNamespaceBySelector(ctx context.Context, namespace string, selector ...string) ([]model.DeploymentStatus, error)
 		ResetDeployment(ctx context.Context, name, namespace string) error
@@ -35,6 +36,18 @@ func NewChallengeService(deps Dependencies) *ChallengeService {
 
 func (s *ChallengeService) CreateChallenge(ctx context.Context, lab *model.Lab, challengeConfig model.ChallengeConfig) (records []model.DNSRecordConfig, errs error) {
 	for _, inst := range challengeConfig.Instances {
+		// check if the instance is already deployed
+		ex, err := s.infrastructure.DeploymentExists(ctx, inst.Id, lab.ID.String())
+		if err != nil {
+			errs = multierror.Append(errs, fmt.Errorf("failed to check if deployment exists: [%w]", err))
+			continue
+		}
+
+		if ex {
+			errs = multierror.Append(errs, fmt.Errorf("instance already exists: [%s]", inst.Id))
+			continue
+		}
+
 		ip, err := lab.CIDRManager.AcquireSingleIP(ctx)
 		if err != nil {
 			errs = multierror.Append(errs, fmt.Errorf("failed to acquire ip for instance: [%w]", err))

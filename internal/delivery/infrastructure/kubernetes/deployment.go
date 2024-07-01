@@ -8,6 +8,7 @@ import (
 	"github.com/cybericebox/agent/internal/service/helper"
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	coreV1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/client-go/applyconfigurations/apps/v1"
@@ -180,7 +181,11 @@ func (k *Kubernetes) GetDeploymentsInNamespaceBySelector(ctx context.Context, la
 func (k *Kubernetes) DeploymentExists(ctx context.Context, name, labId string) (bool, error) {
 	dp, err := k.kubeClient.AppsV1().Deployments(labId).Get(ctx, name, metaV1.GetOptions{})
 	if err != nil {
-		return false, err
+		if errors.IsNotFound(err) {
+			return false, nil
+		} else {
+			return false, err
+		}
 	}
 	return dp.GetName() == name && dp.GetNamespace() == labId, nil
 }

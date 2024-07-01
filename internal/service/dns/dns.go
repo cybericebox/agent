@@ -16,16 +16,19 @@ const (
 	dnsName       = "dns-server"
 	dnsConfigName = "dns-config"
 
-	image = "coredns/coredns:1.10.0"
+	image = "coredns/coredns:1.11.0"
 
 	coreFile = "Corefile"
 	zoneFile = "zonefile"
 
 	coreFileContent = `. {
-    file zonefile
+	forward . 127.0.0.1:5301 8.8.8.8 1.1.1.1
+    log            # enable query logs
+}
+.:5301 {
+	file zonefile
     prometheus     # enable metrics
     errors         # show errors
-    log            # enable query logs
 }
 `
 	zonePrefixContent = `$ORIGIN .
