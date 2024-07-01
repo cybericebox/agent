@@ -22,7 +22,9 @@ const (
 	zoneFile = "zonefile"
 
 	coreFileContent = `. {
-	forward . 127.0.0.1:5301 8.8.8.8 1.1.1.1
+	forward . 127.0.0.1:5301 8.8.8.8 1.1.1.1 {
+policy sequential
+}
     log            # enable query logs
 }
 .:5301 {
