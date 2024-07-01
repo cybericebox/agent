@@ -39,7 +39,7 @@ type (
 func NewService(deps Dependencies) *Service {
 	IPAManager, err := ipam.NewIPAManager(ipam.Dependencies{
 		PostgresConfig: ipam.PostgresConfig(deps.Config.Postgres),
-		CIDR:           deps.Config.LabCIDR,
+		CIDR:           deps.Config.LabsCIDR,
 	})
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to initialize IPAManager")

@@ -38,7 +38,7 @@ type (
 	}
 
 	ServiceConfig struct {
-		LabCIDR  string `yaml:"labCIDR" env:"LAB_CIDR" env-default:"128.0.0.0/8" env-description:"Lab subnet"`
+		LabsCIDR string `yaml:"labsCIDR" env:"LABS_CIDR" env-default:"128.0.0.0/8" env-description:"Labs subnet"`
 		Postgres PostgresConfig
 	}
 
