@@ -28,6 +28,8 @@ func (a *Agent) GetLabs(ctx context.Context, request *protobuf.GetLabsRequest) (
 		lab, err := a.service.GetLab(ctx, id)
 		if err != nil {
 			errs = multierror.Append(errs, err)
+			log.Error().Err(err).Msg("Failed to get lab")
+			continue
 		}
 		labs = append(labs, &protobuf.Lab{
 			Id:   lab.ID.String(),
@@ -71,58 +73,55 @@ func (a *Agent) DeleteLabs(ctx context.Context, request *protobuf.DeleteLabsRequ
 	return &protobuf.EmptyResponse{}, nil
 }
 
-func (a *Agent) AddLabsChallenges(ctx context.Context, request *protobuf.AddLabsChallengesRequest) (*protobuf.EmptyResponse, error) {
+func (a *Agent) AddLabChallenges(ctx context.Context, request *protobuf.AddLabChallengesRequest) (*protobuf.EmptyResponse, error) {
 	var errs error
 
-	for _, labID := range request.GetLabIDs() {
+	challengesConfigs := make([]model.ChallengeConfig, 0)
 
-		challengesConfigs := make([]model.ChallengeConfig, 0)
+	for _, chConfig := range request.GetChallenges() {
+		instances := make([]model.InstanceConfig, 0)
 
-		for _, chConfig := range request.GetChallenges() {
-			instances := make([]model.InstanceConfig, 0)
-
-			for _, inst := range chConfig.GetInstances() {
-				envs := make([]model.EnvConfig, 0)
-				for _, env := range inst.GetEnvs() {
-					envs = append(envs, model.EnvConfig{
-						Name:  env.GetName(),
-						Value: env.GetValue(),
-					})
-				}
-
-				records := make([]model.DNSRecordConfig, 0)
-				for _, record := range inst.GetRecords() {
-					records = append(records, model.DNSRecordConfig{
-						Type: record.GetType(),
-						Name: record.GetName(),
-						Data: record.GetData(),
-					})
-				}
-
-				instances = append(instances, model.InstanceConfig{
-					Id:    inst.GetId(),
-					Image: inst.GetImage(),
-					Resources: model.ResourcesConfig{
-						Requests: model.ResourceConfig{
-							Memory: inst.GetResources().GetMemory(),
-							CPU:    inst.GetResources().GetCpu(),
-						},
-						Limit: model.ResourceConfig{
-							Memory: inst.GetResources().GetMemory(),
-							CPU:    inst.GetResources().GetCpu(),
-						},
-					},
-					Envs:    envs,
-					Records: records,
+		for _, inst := range chConfig.GetInstances() {
+			envs := make([]model.EnvConfig, 0)
+			for _, env := range inst.GetEnvs() {
+				envs = append(envs, model.EnvConfig{
+					Name:  env.GetName(),
+					Value: env.GetValue(),
 				})
 			}
 
-			challengesConfigs = append(challengesConfigs, model.ChallengeConfig{Id: chConfig.GetId(), Instances: instances})
+			records := make([]model.DNSRecordConfig, 0)
+			for _, record := range inst.GetRecords() {
+				records = append(records, model.DNSRecordConfig{
+					Type: record.GetType(),
+					Name: record.GetName(),
+					Data: record.GetData(),
+				})
+			}
+
+			instances = append(instances, model.InstanceConfig{
+				Id:    inst.GetId(),
+				Image: inst.GetImage(),
+				Resources: model.ResourcesConfig{
+					Requests: model.ResourceConfig{
+						Memory: inst.GetResources().GetMemory(),
+						CPU:    inst.GetResources().GetCpu(),
+					},
+					Limit: model.ResourceConfig{
+						Memory: inst.GetResources().GetMemory(),
+						CPU:    inst.GetResources().GetCpu(),
+					},
+				},
+				Envs:    envs,
+				Records: records,
+			})
 		}
 
-		if err := a.service.AddLabChallenges(ctx, labID, challengesConfigs); err != nil {
-			errs = multierror.Append(errs, err)
-		}
+		challengesConfigs = append(challengesConfigs, model.ChallengeConfig{Id: chConfig.GetId(), Instances: instances})
+	}
+
+	if err := a.service.AddLabChallenges(ctx, request.GetLabID(), challengesConfigs); err != nil {
+		errs = multierror.Append(errs, err)
 	}
 
 	if errs != nil {

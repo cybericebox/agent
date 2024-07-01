@@ -161,8 +161,6 @@ func (s *LabService) AddLabChallenges(ctx context.Context, labID string, challen
 		labRecords = append(labRecords, records...)
 	}
 
-	fmt.Println("labRecords", labRecords)
-
 	if err = s.service.RefreshDNSRecords(ctx, lab.ID.String(), labRecords, true); err != nil {
 		errs = multierror.Append(errs, fmt.Errorf("failed to refresh DNS records: [%w]", err))
 	}

@@ -6,6 +6,7 @@ import (
 	"github.com/cybericebox/agent/internal/config"
 	"github.com/cybericebox/agent/internal/model"
 	"github.com/cybericebox/agent/internal/service/helper"
+	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	coreV1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -97,6 +98,7 @@ func (k *Kubernetes) ApplyDeployment(ctx context.Context, cfg model.ApplyDeploym
 	annotations := make(map[string]string)
 	if cfg.IP != "" {
 		annotations["cni.projectcalico.org/ipAddrs"] = fmt.Sprintf("[\"%s\"]", strings.Split(cfg.IP, "/")[0])
+		annotations["ip"] = strings.Split(cfg.IP, "/")[0]
 	}
 
 	capAdds := make([]coreV1.Capability, 0)
@@ -160,12 +162,12 @@ func (k *Kubernetes) GetDeploymentsInNamespaceBySelector(ctx context.Context, la
 		return nil, err
 	}
 
-	dpsStatus := make([]model.DeploymentStatus, len(dps.Items))
+	dpsStatus := make([]model.DeploymentStatus, 0)
 
 	for _, dp := range dps.Items {
 		dpsStatus = append(dpsStatus, model.DeploymentStatus{
 			Name:          dp.GetName(),
-			IP:            dp.Spec.Template.GetAnnotations()["cni.projectcalico.org/ipAddrs"],
+			IP:            dp.Spec.Template.Annotations["ip"],
 			AllReplicas:   dp.Status.Replicas,
 			ReadyReplicas: dp.Status.ReadyReplicas,
 			Labels:        dp.GetLabels(),
@@ -195,14 +197,19 @@ func (k *Kubernetes) ResetDeployment(ctx context.Context, name, labId string) er
 }
 
 func (k *Kubernetes) ScaleDeployment(ctx context.Context, name, labId string, scale int32) error {
-	s, err := k.kubeClient.AppsV1().Deployments(labId).GetScale(ctx, name, metaV1.GetOptions{})
-	if err != nil {
-		return err
-	}
-
-	s.Spec.Replicas = scale
-
-	if _, err = k.kubeClient.AppsV1().Deployments(labId).UpdateScale(ctx, name, s, metaV1.UpdateOptions{}); err != nil {
+	if _, err := k.kubeClient.AppsV1().Deployments(labId).UpdateScale(ctx, name, &autoscalingv1.Scale{
+		TypeMeta: metaV1.TypeMeta{
+			Kind:       "Scale",
+			APIVersion: "autoscaling/v1",
+		},
+		ObjectMeta: metaV1.ObjectMeta{
+			Name:      name,
+			Namespace: labId,
+		},
+		Spec: autoscalingv1.ScaleSpec{
+			Replicas: scale,
+		},
+	}, metaV1.UpdateOptions{}); err != nil {
 		return err
 	}
 

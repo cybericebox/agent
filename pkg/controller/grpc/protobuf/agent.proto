@@ -6,7 +6,7 @@ service Agent {
   // laboratory
   rpc CreateLab(CreateLabRequest) returns (CreateLabResponse) {}
   rpc DeleteLabs(DeleteLabsRequest) returns (EmptyResponse) {}
-  rpc AddLabsChallenges(AddLabsChallengesRequest) returns (EmptyResponse) {}
+  rpc AddLabChallenges(AddLabChallengesRequest) returns (EmptyResponse) {}
   rpc DeleteLabsChallenges(DeleteLabsChallengesRequest) returns (EmptyResponse) {}
 
   rpc GetLabs(GetLabsRequest) returns (GetLabsResponse) {}
@@ -35,8 +35,8 @@ message DeleteLabsRequest {
   repeated string labIDs = 1;
 }
 
-message AddLabsChallengesRequest {
-  repeated string labIDs = 1;
+message AddLabChallengesRequest {
+  string labID = 1;
   repeated Challenge challenges = 2;
 }
 

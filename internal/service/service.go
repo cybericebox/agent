@@ -106,7 +106,7 @@ func (s *Service) Test() error {
 	if err = s.LabService.DeleteLabChallenges(ctx, labID, []string{"test-challenge"}); err != nil {
 		errs = multierror.Append(errs, fmt.Errorf("failed to delete test challenge from test lab: [%w]", err))
 	}
-
+	//
 	// try to delete the lab
 	if err = s.LabService.DeleteLab(ctx, labID); err != nil {
 		errs = multierror.Append(errs, fmt.Errorf("failed to delete test lab: [%w]", err))

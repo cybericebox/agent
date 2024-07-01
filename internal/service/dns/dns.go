@@ -151,11 +151,11 @@ func (dns *DNSServer) generateZoneConfig() (string, error) {
 
 	t, err := template.New("config").Parse(zonePrefixContent)
 	if err != nil {
-		panic(err)
+		return "", fmt.Errorf("failed to parse template: [%w]", err)
 	}
 	err = t.Execute(&tpl, dns.records)
 	if err != nil {
-		panic(err)
+		return "", fmt.Errorf("failed to execute template: [%w]", err)
 	}
 	return tpl.String(), nil
 }
@@ -165,20 +165,24 @@ func (dns *DNSServer) setConfig(ctx context.Context) error {
 	cfg, err := dns.generateZoneConfig()
 
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to generate zone config: [%w]", err)
 	}
 
-	return dns.infrastructure.ApplyConfigMap(ctx, dnsConfigName, dns.labID, map[string]string{
+	if err = dns.infrastructure.ApplyConfigMap(ctx, dnsConfigName, dns.labID, map[string]string{
 		coreFile:                coreFileContent,
 		zoneFile:                cfg,
 		config.RecordsListLabel: helper.RecordsToStr(dns.records),
-	})
+	}); err != nil {
+		return fmt.Errorf("failed to apply config map: [%w]", err)
+	}
+
+	return nil
 }
 
 func (dns *DNSServer) getRecords(ctx context.Context) error {
 	data, err := dns.infrastructure.GetConfigMapData(ctx, dnsConfigName, dns.labID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get config map data: [%w]", err)
 	}
 
 	if len(data[config.RecordsListLabel]) == 0 {
@@ -191,7 +195,11 @@ func (dns *DNSServer) getRecords(ctx context.Context) error {
 }
 
 func (dns *DNSServer) reset(ctx context.Context) error {
-	return dns.infrastructure.ResetDeployment(ctx, dnsName, dns.labID)
+	if err := dns.infrastructure.ResetDeployment(ctx, dnsName, dns.labID); err != nil {
+		return fmt.Errorf("failed to reset deployment: [%w]", err)
+	}
+
+	return nil
 }
 
 func (dns *DNSServer) addRecords(records []model.DNSRecordConfig) error {
@@ -205,7 +213,11 @@ func (dns *DNSServer) addRecords(records []model.DNSRecordConfig) error {
 		}
 	}
 
-	return errs
+	if errs != nil {
+		return fmt.Errorf("failed to add records: [%w]", errs)
+	}
+
+	return nil
 }
 
 func (dns *DNSServer) deleteRecords(records []model.DNSRecordConfig) error {
@@ -219,5 +231,9 @@ func (dns *DNSServer) deleteRecords(records []model.DNSRecordConfig) error {
 		}
 	}
 
-	return errs
+	if errs != nil {
+		return fmt.Errorf("failed to delete records: [%w]", errs)
+	}
+
+	return nil
 }

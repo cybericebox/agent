@@ -16,8 +16,6 @@ func RecordsToStr(records []model.DNSRecordConfig) string {
 		strRecords = append(strRecords, join)
 	}
 
-	fmt.Println(strRecords)
-
 	return strings.Join(strRecords, "---")
 }
 
@@ -35,13 +33,11 @@ func RecordsFromStr(str string) []model.DNSRecordConfig {
 		})
 	}
 
-	fmt.Println(records)
-
 	return records
 }
 
 func GetLabel(values ...string) string {
 	labelSHA := sha256.Sum256([]byte(strings.Join(values, "")))
-	catted, _ := strings.CutSuffix(base64.URLEncoding.EncodeToString(labelSHA[:]), "=")
-	return fmt.Sprintf("A%sA", catted)
+	cut, _ := strings.CutSuffix(base64.URLEncoding.EncodeToString(labelSHA[:]), "=")
+	return fmt.Sprintf("A%sA", cut)
 }

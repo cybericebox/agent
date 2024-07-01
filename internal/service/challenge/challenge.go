@@ -83,6 +83,8 @@ func (s *ChallengeService) DeleteChallenge(ctx context.Context, lab *model.Lab, 
 		return nil, fmt.Errorf("failed to get instances in namespace by selector: [%w]", err)
 	}
 
+	records = make([]model.DNSRecordConfig, 0)
+
 	for _, dp := range dps {
 		if err = s.infrastructure.DeleteDeployment(ctx, dp.Name, lab.ID.String()); err != nil {
 			errs = multierror.Append(errs, fmt.Errorf("failed to delete deployment: [%w]", err))
@@ -100,9 +102,9 @@ func (s *ChallengeService) DeleteChallenge(ctx context.Context, lab *model.Lab, 
 
 func (s *ChallengeService) StartChallenge(ctx context.Context, labID, challengeID string) (errs error) {
 	dps, err := s.infrastructure.GetDeploymentsInNamespaceBySelector(ctx, labID,
-		fmt.Sprintf("%s:%s", config.PlatformLabel, config.Challenge),
-		fmt.Sprintf("%s:%s", config.LabIDLabel, labID),
-		fmt.Sprintf("%s:%s", config.ChallengeIDLabel, challengeID),
+		fmt.Sprintf("%s=%s", config.PlatformLabel, config.Challenge),
+		fmt.Sprintf("%s=%s", config.LabIDLabel, labID),
+		fmt.Sprintf("%s=%s", config.ChallengeIDLabel, challengeID),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to get instances in namespace by selector: [%w]", err)
@@ -118,9 +120,9 @@ func (s *ChallengeService) StartChallenge(ctx context.Context, labID, challengeI
 
 func (s *ChallengeService) StopChallenge(ctx context.Context, labID, challengeID string) (errs error) {
 	dps, err := s.infrastructure.GetDeploymentsInNamespaceBySelector(ctx, labID,
-		fmt.Sprintf("%s:%s", config.PlatformLabel, config.Challenge),
-		fmt.Sprintf("%s:%s", config.LabIDLabel, labID),
-		fmt.Sprintf("%s:%s", config.ChallengeIDLabel, challengeID),
+		fmt.Sprintf("%s=%s", config.PlatformLabel, config.Challenge),
+		fmt.Sprintf("%s=%s", config.LabIDLabel, labID),
+		fmt.Sprintf("%s=%s", config.ChallengeIDLabel, challengeID),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to get instances in namespace by selector: [%w]", err)
@@ -136,9 +138,9 @@ func (s *ChallengeService) StopChallenge(ctx context.Context, labID, challengeID
 
 func (s *ChallengeService) ResetChallenge(ctx context.Context, labID, challengeID string) (errs error) {
 	dps, err := s.infrastructure.GetDeploymentsInNamespaceBySelector(ctx, labID,
-		fmt.Sprintf("%s:%s", config.PlatformLabel, config.Challenge),
-		fmt.Sprintf("%s:%s", config.LabIDLabel, labID),
-		fmt.Sprintf("%s:%s", config.ChallengeIDLabel, challengeID),
+		fmt.Sprintf("%s=%s", config.PlatformLabel, config.Challenge),
+		fmt.Sprintf("%s=%s", config.LabIDLabel, labID),
+		fmt.Sprintf("%s=%s", config.ChallengeIDLabel, challengeID),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to get instances in namespace by selector: [%w]", err)
