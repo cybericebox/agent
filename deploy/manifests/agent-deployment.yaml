@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agent
+  namespace: cybericebox
+  labels:
+    app: agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: agent
+  template:
+    metadata:
+      name: agent
+      namespace: cybericebox
+      labels:
+        app: agent
+    spec:
+      automountServiceAccountToken: true
+      serviceAccountName: leaderelection-sa
+      containers:
+        - name: agent
+          image: cybericebox/agent:latest
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: config
