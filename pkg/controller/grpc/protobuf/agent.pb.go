@@ -20,6 +20,44 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type EmptyRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *EmptyRequest) Reset() {
+	*x = EmptyRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_agent_proto_msgTypes[0]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *EmptyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EmptyRequest) ProtoMessage() {}
+
+func (x *EmptyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_proto_msgTypes[0]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EmptyRequest.ProtoReflect.Descriptor instead.
+func (*EmptyRequest) Descriptor() ([]byte, []int) {
+	return file_agent_proto_rawDescGZIP(), []int{0}
+}
+
 type EmptyResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -29,7 +67,7 @@ type EmptyResponse struct {
 func (x *EmptyResponse) Reset() {
 	*x = EmptyResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_agent_proto_msgTypes[0]
+		mi := &file_agent_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -42,7 +80,7 @@ func (x *EmptyResponse) String() string {
 func (*EmptyResponse) ProtoMessage() {}
 
 func (x *EmptyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[0]
+	mi := &file_agent_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -55,7 +93,7 @@ func (x *EmptyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EmptyResponse.ProtoReflect.Descriptor instead.
 func (*EmptyResponse) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{0}
+	return file_agent_proto_rawDescGZIP(), []int{1}
 }
 
 type CreateLabRequest struct {
@@ -69,7 +107,7 @@ type CreateLabRequest struct {
 func (x *CreateLabRequest) Reset() {
 	*x = CreateLabRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_agent_proto_msgTypes[1]
+		mi := &file_agent_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -82,7 +120,7 @@ func (x *CreateLabRequest) String() string {
 func (*CreateLabRequest) ProtoMessage() {}
 
 func (x *CreateLabRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[1]
+	mi := &file_agent_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -95,7 +133,7 @@ func (x *CreateLabRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateLabRequest.ProtoReflect.Descriptor instead.
 func (*CreateLabRequest) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{1}
+	return file_agent_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *CreateLabRequest) GetCidrMask() uint32 {
@@ -116,7 +154,7 @@ type GetLabsRequest struct {
 func (x *GetLabsRequest) Reset() {
 	*x = GetLabsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_agent_proto_msgTypes[2]
+		mi := &file_agent_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -129,7 +167,7 @@ func (x *GetLabsRequest) String() string {
 func (*GetLabsRequest) ProtoMessage() {}
 
 func (x *GetLabsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[2]
+	mi := &file_agent_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -142,7 +180,7 @@ func (x *GetLabsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLabsRequest.ProtoReflect.Descriptor instead.
 func (*GetLabsRequest) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{2}
+	return file_agent_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GetLabsRequest) GetLabIDs() []string {
@@ -163,7 +201,7 @@ type DeleteLabsRequest struct {
 func (x *DeleteLabsRequest) Reset() {
 	*x = DeleteLabsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_agent_proto_msgTypes[3]
+		mi := &file_agent_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -176,7 +214,7 @@ func (x *DeleteLabsRequest) String() string {
 func (*DeleteLabsRequest) ProtoMessage() {}
 
 func (x *DeleteLabsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[3]
+	mi := &file_agent_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -189,7 +227,7 @@ func (x *DeleteLabsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteLabsRequest.ProtoReflect.Descriptor instead.
 func (*DeleteLabsRequest) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{3}
+	return file_agent_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *DeleteLabsRequest) GetLabIDs() []string {
@@ -211,7 +249,7 @@ type AddLabChallengesRequest struct {
 func (x *AddLabChallengesRequest) Reset() {
 	*x = AddLabChallengesRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_agent_proto_msgTypes[4]
+		mi := &file_agent_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -224,7 +262,7 @@ func (x *AddLabChallengesRequest) String() string {
 func (*AddLabChallengesRequest) ProtoMessage() {}
 
 func (x *AddLabChallengesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[4]
+	mi := &file_agent_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -237,7 +275,7 @@ func (x *AddLabChallengesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddLabChallengesRequest.ProtoReflect.Descriptor instead.
 func (*AddLabChallengesRequest) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{4}
+	return file_agent_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *AddLabChallengesRequest) GetLabID() string {
@@ -266,7 +304,7 @@ type DeleteLabsChallengesRequest struct {
 func (x *DeleteLabsChallengesRequest) Reset() {
 	*x = DeleteLabsChallengesRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_agent_proto_msgTypes[5]
+		mi := &file_agent_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -279,7 +317,7 @@ func (x *DeleteLabsChallengesRequest) String() string {
 func (*DeleteLabsChallengesRequest) ProtoMessage() {}
 
 func (x *DeleteLabsChallengesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[5]
+	mi := &file_agent_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -292,7 +330,7 @@ func (x *DeleteLabsChallengesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteLabsChallengesRequest.ProtoReflect.Descriptor instead.
 func (*DeleteLabsChallengesRequest) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{5}
+	return file_agent_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *DeleteLabsChallengesRequest) GetLabIDs() []string {
@@ -320,7 +358,7 @@ type CreateLabResponse struct {
 func (x *CreateLabResponse) Reset() {
 	*x = CreateLabResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_agent_proto_msgTypes[6]
+		mi := &file_agent_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -333,7 +371,7 @@ func (x *CreateLabResponse) String() string {
 func (*CreateLabResponse) ProtoMessage() {}
 
 func (x *CreateLabResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[6]
+	mi := &file_agent_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -346,7 +384,7 @@ func (x *CreateLabResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateLabResponse.ProtoReflect.Descriptor instead.
 func (*CreateLabResponse) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{6}
+	return file_agent_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *CreateLabResponse) GetId() string {
@@ -367,7 +405,7 @@ type GetLabsResponse struct {
 func (x *GetLabsResponse) Reset() {
 	*x = GetLabsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_agent_proto_msgTypes[7]
+		mi := &file_agent_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -380,7 +418,7 @@ func (x *GetLabsResponse) String() string {
 func (*GetLabsResponse) ProtoMessage() {}
 
 func (x *GetLabsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[7]
+	mi := &file_agent_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -393,7 +431,7 @@ func (x *GetLabsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLabsResponse.ProtoReflect.Descriptor instead.
 func (*GetLabsResponse) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{7}
+	return file_agent_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *GetLabsResponse) GetLabs() []*Lab {
@@ -415,7 +453,7 @@ type Lab struct {
 func (x *Lab) Reset() {
 	*x = Lab{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_agent_proto_msgTypes[8]
+		mi := &file_agent_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -428,7 +466,7 @@ func (x *Lab) String() string {
 func (*Lab) ProtoMessage() {}
 
 func (x *Lab) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[8]
+	mi := &file_agent_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -441,7 +479,7 @@ func (x *Lab) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Lab.ProtoReflect.Descriptor instead.
 func (*Lab) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{8}
+	return file_agent_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *Lab) GetId() string {
@@ -470,7 +508,7 @@ type Challenge struct {
 func (x *Challenge) Reset() {
 	*x = Challenge{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_agent_proto_msgTypes[9]
+		mi := &file_agent_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -483,7 +521,7 @@ func (x *Challenge) String() string {
 func (*Challenge) ProtoMessage() {}
 
 func (x *Challenge) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[9]
+	mi := &file_agent_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -496,7 +534,7 @@ func (x *Challenge) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Challenge.ProtoReflect.Descriptor instead.
 func (*Challenge) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{9}
+	return file_agent_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *Challenge) GetId() string {
@@ -528,7 +566,7 @@ type Instance struct {
 func (x *Instance) Reset() {
 	*x = Instance{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_agent_proto_msgTypes[10]
+		mi := &file_agent_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -541,7 +579,7 @@ func (x *Instance) String() string {
 func (*Instance) ProtoMessage() {}
 
 func (x *Instance) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[10]
+	mi := &file_agent_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -554,7 +592,7 @@ func (x *Instance) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Instance.ProtoReflect.Descriptor instead.
 func (*Instance) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{10}
+	return file_agent_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *Instance) GetId() string {
@@ -604,7 +642,7 @@ type Resources struct {
 func (x *Resources) Reset() {
 	*x = Resources{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_agent_proto_msgTypes[11]
+		mi := &file_agent_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -617,7 +655,7 @@ func (x *Resources) String() string {
 func (*Resources) ProtoMessage() {}
 
 func (x *Resources) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[11]
+	mi := &file_agent_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -630,7 +668,7 @@ func (x *Resources) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Resources.ProtoReflect.Descriptor instead.
 func (*Resources) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{11}
+	return file_agent_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *Resources) GetMemory() string {
@@ -659,7 +697,7 @@ type EnvVariable struct {
 func (x *EnvVariable) Reset() {
 	*x = EnvVariable{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_agent_proto_msgTypes[12]
+		mi := &file_agent_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -672,7 +710,7 @@ func (x *EnvVariable) String() string {
 func (*EnvVariable) ProtoMessage() {}
 
 func (x *EnvVariable) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[12]
+	mi := &file_agent_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -685,7 +723,7 @@ func (x *EnvVariable) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EnvVariable.ProtoReflect.Descriptor instead.
 func (*EnvVariable) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{12}
+	return file_agent_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *EnvVariable) GetName() string {
@@ -715,7 +753,7 @@ type DNSRecord struct {
 func (x *DNSRecord) Reset() {
 	*x = DNSRecord{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_agent_proto_msgTypes[13]
+		mi := &file_agent_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -728,7 +766,7 @@ func (x *DNSRecord) String() string {
 func (*DNSRecord) ProtoMessage() {}
 
 func (x *DNSRecord) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[13]
+	mi := &file_agent_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -741,7 +779,7 @@ func (x *DNSRecord) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DNSRecord.ProtoReflect.Descriptor instead.
 func (*DNSRecord) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{13}
+	return file_agent_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *DNSRecord) GetType() string {
@@ -777,7 +815,7 @@ type ChallengeRequest struct {
 func (x *ChallengeRequest) Reset() {
 	*x = ChallengeRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_agent_proto_msgTypes[14]
+		mi := &file_agent_proto_msgTypes[15]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -790,7 +828,7 @@ func (x *ChallengeRequest) String() string {
 func (*ChallengeRequest) ProtoMessage() {}
 
 func (x *ChallengeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[14]
+	mi := &file_agent_proto_msgTypes[15]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -803,7 +841,7 @@ func (x *ChallengeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChallengeRequest.ProtoReflect.Descriptor instead.
 func (*ChallengeRequest) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{14}
+	return file_agent_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ChallengeRequest) GetId() string {
@@ -824,7 +862,8 @@ var File_agent_proto protoreflect.FileDescriptor
 
 var file_agent_proto_rawDesc = []byte{
 	0x0a, 0x0b, 0x61, 0x67, 0x65, 0x6e, 0x74, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x05, 0x61,
-	0x67, 0x65, 0x6e, 0x74, 0x22, 0x0f, 0x0a, 0x0d, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x73,
+	0x67, 0x65, 0x6e, 0x74, 0x22, 0x0e, 0x0a, 0x0c, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x22, 0x0f, 0x0a, 0x0d, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x73,
 	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x2e, 0x0a, 0x10, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x4c,
 	0x61, 0x62, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1a, 0x0a, 0x08, 0x63, 0x69, 0x64,
 	0x72, 0x4d, 0x61, 0x73, 0x6b, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x08, 0x63, 0x69, 0x64,
@@ -885,46 +924,49 @@ var file_agent_proto_rawDesc = []byte{
 	0x6c, 0x6c, 0x65, 0x6e, 0x67, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x0e, 0x0a,
 	0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x14, 0x0a,
 	0x05, 0x6c, 0x61, 0x62, 0x49, 0x44, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x6c, 0x61,
-	0x62, 0x49, 0x44, 0x32, 0xad, 0x04, 0x0a, 0x05, 0x41, 0x67, 0x65, 0x6e, 0x74, 0x12, 0x40, 0x0a,
-	0x09, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x4c, 0x61, 0x62, 0x12, 0x17, 0x2e, 0x61, 0x67, 0x65,
-	0x6e, 0x74, 0x2e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x4c, 0x61, 0x62, 0x52, 0x65, 0x71, 0x75,
-	0x65, 0x73, 0x74, 0x1a, 0x18, 0x2e, 0x61, 0x67, 0x65, 0x6e, 0x74, 0x2e, 0x43, 0x72, 0x65, 0x61,
-	0x74, 0x65, 0x4c, 0x61, 0x62, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12,
-	0x3e, 0x0a, 0x0a, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x4c, 0x61, 0x62, 0x73, 0x12, 0x18, 0x2e,
-	0x61, 0x67, 0x65, 0x6e, 0x74, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x4c, 0x61, 0x62, 0x73,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e, 0x61, 0x67, 0x65, 0x6e, 0x74, 0x2e,
-	0x45, 0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12,
-	0x4a, 0x0a, 0x10, 0x41, 0x64, 0x64, 0x4c, 0x61, 0x62, 0x43, 0x68, 0x61, 0x6c, 0x6c, 0x65, 0x6e,
-	0x67, 0x65, 0x73, 0x12, 0x1e, 0x2e, 0x61, 0x67, 0x65, 0x6e, 0x74, 0x2e, 0x41, 0x64, 0x64, 0x4c,
-	0x61, 0x62, 0x43, 0x68, 0x61, 0x6c, 0x6c, 0x65, 0x6e, 0x67, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75,
-	0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e, 0x61, 0x67, 0x65, 0x6e, 0x74, 0x2e, 0x45, 0x6d, 0x70, 0x74,
-	0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x52, 0x0a, 0x14, 0x44,
-	0x65, 0x6c, 0x65, 0x74, 0x65, 0x4c, 0x61, 0x62, 0x73, 0x43, 0x68, 0x61, 0x6c, 0x6c, 0x65, 0x6e,
-	0x67, 0x65, 0x73, 0x12, 0x22, 0x2e, 0x61, 0x67, 0x65, 0x6e, 0x74, 0x2e, 0x44, 0x65, 0x6c, 0x65,
-	0x74, 0x65, 0x4c, 0x61, 0x62, 0x73, 0x43, 0x68, 0x61, 0x6c, 0x6c, 0x65, 0x6e, 0x67, 0x65, 0x73,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e, 0x61, 0x67, 0x65, 0x6e, 0x74, 0x2e,
-	0x45, 0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12,
-	0x3a, 0x0a, 0x07, 0x47, 0x65, 0x74, 0x4c, 0x61, 0x62, 0x73, 0x12, 0x15, 0x2e, 0x61, 0x67, 0x65,
-	0x6e, 0x74, 0x2e, 0x47, 0x65, 0x74, 0x4c, 0x61, 0x62, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x1a, 0x16, 0x2e, 0x61, 0x67, 0x65, 0x6e, 0x74, 0x2e, 0x47, 0x65, 0x74, 0x4c, 0x61, 0x62,
-	0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x41, 0x0a, 0x0e, 0x53,
-	0x74, 0x61, 0x72, 0x74, 0x43, 0x68, 0x61, 0x6c, 0x6c, 0x65, 0x6e, 0x67, 0x65, 0x12, 0x17, 0x2e,
-	0x61, 0x67, 0x65, 0x6e, 0x74, 0x2e, 0x43, 0x68, 0x61, 0x6c, 0x6c, 0x65, 0x6e, 0x67, 0x65, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e, 0x61, 0x67, 0x65, 0x6e, 0x74, 0x2e, 0x45,
-	0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x40,
-	0x0a, 0x0d, 0x53, 0x74, 0x6f, 0x70, 0x43, 0x68, 0x61, 0x6c, 0x6c, 0x65, 0x6e, 0x67, 0x65, 0x12,
-	0x17, 0x2e, 0x61, 0x67, 0x65, 0x6e, 0x74, 0x2e, 0x43, 0x68, 0x61, 0x6c, 0x6c, 0x65, 0x6e, 0x67,
-	0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e, 0x61, 0x67, 0x65, 0x6e, 0x74,
+	0x62, 0x49, 0x44, 0x32, 0xe2, 0x04, 0x0a, 0x05, 0x41, 0x67, 0x65, 0x6e, 0x74, 0x12, 0x33, 0x0a,
+	0x04, 0x50, 0x69, 0x6e, 0x67, 0x12, 0x13, 0x2e, 0x61, 0x67, 0x65, 0x6e, 0x74, 0x2e, 0x45, 0x6d,
+	0x70, 0x74, 0x79, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e, 0x61, 0x67, 0x65,
+	0x6e, 0x74, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x22, 0x00, 0x12, 0x40, 0x0a, 0x09, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x4c, 0x61, 0x62, 0x12,
+	0x17, 0x2e, 0x61, 0x67, 0x65, 0x6e, 0x74, 0x2e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x4c, 0x61,
+	0x62, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x18, 0x2e, 0x61, 0x67, 0x65, 0x6e, 0x74,
+	0x2e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x4c, 0x61, 0x62, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x22, 0x00, 0x12, 0x3e, 0x0a, 0x0a, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x4c, 0x61,
+	0x62, 0x73, 0x12, 0x18, 0x2e, 0x61, 0x67, 0x65, 0x6e, 0x74, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74,
+	0x65, 0x4c, 0x61, 0x62, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e, 0x61,
+	0x67, 0x65, 0x6e, 0x74, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x22, 0x00, 0x12, 0x4a, 0x0a, 0x10, 0x41, 0x64, 0x64, 0x4c, 0x61, 0x62, 0x43, 0x68,
+	0x61, 0x6c, 0x6c, 0x65, 0x6e, 0x67, 0x65, 0x73, 0x12, 0x1e, 0x2e, 0x61, 0x67, 0x65, 0x6e, 0x74,
+	0x2e, 0x41, 0x64, 0x64, 0x4c, 0x61, 0x62, 0x43, 0x68, 0x61, 0x6c, 0x6c, 0x65, 0x6e, 0x67, 0x65,
+	0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e, 0x61, 0x67, 0x65, 0x6e, 0x74,
 	0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00,
-	0x12, 0x41, 0x0a, 0x0e, 0x52, 0x65, 0x73, 0x65, 0x74, 0x43, 0x68, 0x61, 0x6c, 0x6c, 0x65, 0x6e,
+	0x12, 0x52, 0x0a, 0x14, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x4c, 0x61, 0x62, 0x73, 0x43, 0x68,
+	0x61, 0x6c, 0x6c, 0x65, 0x6e, 0x67, 0x65, 0x73, 0x12, 0x22, 0x2e, 0x61, 0x67, 0x65, 0x6e, 0x74,
+	0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x4c, 0x61, 0x62, 0x73, 0x43, 0x68, 0x61, 0x6c, 0x6c,
+	0x65, 0x6e, 0x67, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e, 0x61,
+	0x67, 0x65, 0x6e, 0x74, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x22, 0x00, 0x12, 0x3a, 0x0a, 0x07, 0x47, 0x65, 0x74, 0x4c, 0x61, 0x62, 0x73, 0x12,
+	0x15, 0x2e, 0x61, 0x67, 0x65, 0x6e, 0x74, 0x2e, 0x47, 0x65, 0x74, 0x4c, 0x61, 0x62, 0x73, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x16, 0x2e, 0x61, 0x67, 0x65, 0x6e, 0x74, 0x2e, 0x47,
+	0x65, 0x74, 0x4c, 0x61, 0x62, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00,
+	0x12, 0x41, 0x0a, 0x0e, 0x53, 0x74, 0x61, 0x72, 0x74, 0x43, 0x68, 0x61, 0x6c, 0x6c, 0x65, 0x6e,
 	0x67, 0x65, 0x12, 0x17, 0x2e, 0x61, 0x67, 0x65, 0x6e, 0x74, 0x2e, 0x43, 0x68, 0x61, 0x6c, 0x6c,
 	0x65, 0x6e, 0x67, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e, 0x61, 0x67,
 	0x65, 0x6e, 0x74, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x22, 0x00, 0x42, 0x3b, 0x5a, 0x39, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f,
-	0x6d, 0x2f, 0x63, 0x79, 0x62, 0x65, 0x72, 0x69, 0x63, 0x65, 0x62, 0x6f, 0x78, 0x2f, 0x61, 0x67,
-	0x65, 0x6e, 0x74, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x6c,
-	0x65, 0x72, 0x2f, 0x67, 0x72, 0x70, 0x63, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66,
-	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x65, 0x22, 0x00, 0x12, 0x40, 0x0a, 0x0d, 0x53, 0x74, 0x6f, 0x70, 0x43, 0x68, 0x61, 0x6c, 0x6c,
+	0x65, 0x6e, 0x67, 0x65, 0x12, 0x17, 0x2e, 0x61, 0x67, 0x65, 0x6e, 0x74, 0x2e, 0x43, 0x68, 0x61,
+	0x6c, 0x6c, 0x65, 0x6e, 0x67, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e,
+	0x61, 0x67, 0x65, 0x6e, 0x74, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x41, 0x0a, 0x0e, 0x52, 0x65, 0x73, 0x65, 0x74, 0x43, 0x68,
+	0x61, 0x6c, 0x6c, 0x65, 0x6e, 0x67, 0x65, 0x12, 0x17, 0x2e, 0x61, 0x67, 0x65, 0x6e, 0x74, 0x2e,
+	0x43, 0x68, 0x61, 0x6c, 0x6c, 0x65, 0x6e, 0x67, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x1a, 0x14, 0x2e, 0x61, 0x67, 0x65, 0x6e, 0x74, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x52, 0x65,
+	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x42, 0x3b, 0x5a, 0x39, 0x67, 0x69, 0x74, 0x68,
+	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x63, 0x79, 0x62, 0x65, 0x72, 0x69, 0x63, 0x65, 0x62,
+	0x6f, 0x78, 0x2f, 0x61, 0x67, 0x65, 0x6e, 0x74, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x63, 0x6f, 0x6e,
+	0x74, 0x72, 0x6f, 0x6c, 0x6c, 0x65, 0x72, 0x2f, 0x67, 0x72, 0x70, 0x63, 0x2f, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x62, 0x75, 0x66, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -939,49 +981,52 @@ func file_agent_proto_rawDescGZIP() []byte {
 	return file_agent_proto_rawDescData
 }
 
-var file_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_agent_proto_goTypes = []interface{}{
-	(*EmptyResponse)(nil),               // 0: agent.EmptyResponse
-	(*CreateLabRequest)(nil),            // 1: agent.CreateLabRequest
-	(*GetLabsRequest)(nil),              // 2: agent.GetLabsRequest
-	(*DeleteLabsRequest)(nil),           // 3: agent.DeleteLabsRequest
-	(*AddLabChallengesRequest)(nil),     // 4: agent.AddLabChallengesRequest
-	(*DeleteLabsChallengesRequest)(nil), // 5: agent.DeleteLabsChallengesRequest
-	(*CreateLabResponse)(nil),           // 6: agent.CreateLabResponse
-	(*GetLabsResponse)(nil),             // 7: agent.GetLabsResponse
-	(*Lab)(nil),                         // 8: agent.Lab
-	(*Challenge)(nil),                   // 9: agent.Challenge
-	(*Instance)(nil),                    // 10: agent.Instance
-	(*Resources)(nil),                   // 11: agent.Resources
-	(*EnvVariable)(nil),                 // 12: agent.EnvVariable
-	(*DNSRecord)(nil),                   // 13: agent.DNSRecord
-	(*ChallengeRequest)(nil),            // 14: agent.ChallengeRequest
+	(*EmptyRequest)(nil),                // 0: agent.EmptyRequest
+	(*EmptyResponse)(nil),               // 1: agent.EmptyResponse
+	(*CreateLabRequest)(nil),            // 2: agent.CreateLabRequest
+	(*GetLabsRequest)(nil),              // 3: agent.GetLabsRequest
+	(*DeleteLabsRequest)(nil),           // 4: agent.DeleteLabsRequest
+	(*AddLabChallengesRequest)(nil),     // 5: agent.AddLabChallengesRequest
+	(*DeleteLabsChallengesRequest)(nil), // 6: agent.DeleteLabsChallengesRequest
+	(*CreateLabResponse)(nil),           // 7: agent.CreateLabResponse
+	(*GetLabsResponse)(nil),             // 8: agent.GetLabsResponse
+	(*Lab)(nil),                         // 9: agent.Lab
+	(*Challenge)(nil),                   // 10: agent.Challenge
+	(*Instance)(nil),                    // 11: agent.Instance
+	(*Resources)(nil),                   // 12: agent.Resources
+	(*EnvVariable)(nil),                 // 13: agent.EnvVariable
+	(*DNSRecord)(nil),                   // 14: agent.DNSRecord
+	(*ChallengeRequest)(nil),            // 15: agent.ChallengeRequest
 }
 var file_agent_proto_depIdxs = []int32{
-	9,  // 0: agent.AddLabChallengesRequest.challenges:type_name -> agent.Challenge
-	8,  // 1: agent.GetLabsResponse.labs:type_name -> agent.Lab
-	10, // 2: agent.Challenge.instances:type_name -> agent.Instance
-	11, // 3: agent.Instance.resources:type_name -> agent.Resources
-	12, // 4: agent.Instance.envs:type_name -> agent.EnvVariable
-	13, // 5: agent.Instance.records:type_name -> agent.DNSRecord
-	1,  // 6: agent.Agent.CreateLab:input_type -> agent.CreateLabRequest
-	3,  // 7: agent.Agent.DeleteLabs:input_type -> agent.DeleteLabsRequest
-	4,  // 8: agent.Agent.AddLabChallenges:input_type -> agent.AddLabChallengesRequest
-	5,  // 9: agent.Agent.DeleteLabsChallenges:input_type -> agent.DeleteLabsChallengesRequest
-	2,  // 10: agent.Agent.GetLabs:input_type -> agent.GetLabsRequest
-	14, // 11: agent.Agent.StartChallenge:input_type -> agent.ChallengeRequest
-	14, // 12: agent.Agent.StopChallenge:input_type -> agent.ChallengeRequest
-	14, // 13: agent.Agent.ResetChallenge:input_type -> agent.ChallengeRequest
-	6,  // 14: agent.Agent.CreateLab:output_type -> agent.CreateLabResponse
-	0,  // 15: agent.Agent.DeleteLabs:output_type -> agent.EmptyResponse
-	0,  // 16: agent.Agent.AddLabChallenges:output_type -> agent.EmptyResponse
-	0,  // 17: agent.Agent.DeleteLabsChallenges:output_type -> agent.EmptyResponse
-	7,  // 18: agent.Agent.GetLabs:output_type -> agent.GetLabsResponse
-	0,  // 19: agent.Agent.StartChallenge:output_type -> agent.EmptyResponse
-	0,  // 20: agent.Agent.StopChallenge:output_type -> agent.EmptyResponse
-	0,  // 21: agent.Agent.ResetChallenge:output_type -> agent.EmptyResponse
-	14, // [14:22] is the sub-list for method output_type
-	6,  // [6:14] is the sub-list for method input_type
+	10, // 0: agent.AddLabChallengesRequest.challenges:type_name -> agent.Challenge
+	9,  // 1: agent.GetLabsResponse.labs:type_name -> agent.Lab
+	11, // 2: agent.Challenge.instances:type_name -> agent.Instance
+	12, // 3: agent.Instance.resources:type_name -> agent.Resources
+	13, // 4: agent.Instance.envs:type_name -> agent.EnvVariable
+	14, // 5: agent.Instance.records:type_name -> agent.DNSRecord
+	0,  // 6: agent.Agent.Ping:input_type -> agent.EmptyRequest
+	2,  // 7: agent.Agent.CreateLab:input_type -> agent.CreateLabRequest
+	4,  // 8: agent.Agent.DeleteLabs:input_type -> agent.DeleteLabsRequest
+	5,  // 9: agent.Agent.AddLabChallenges:input_type -> agent.AddLabChallengesRequest
+	6,  // 10: agent.Agent.DeleteLabsChallenges:input_type -> agent.DeleteLabsChallengesRequest
+	3,  // 11: agent.Agent.GetLabs:input_type -> agent.GetLabsRequest
+	15, // 12: agent.Agent.StartChallenge:input_type -> agent.ChallengeRequest
+	15, // 13: agent.Agent.StopChallenge:input_type -> agent.ChallengeRequest
+	15, // 14: agent.Agent.ResetChallenge:input_type -> agent.ChallengeRequest
+	1,  // 15: agent.Agent.Ping:output_type -> agent.EmptyResponse
+	7,  // 16: agent.Agent.CreateLab:output_type -> agent.CreateLabResponse
+	1,  // 17: agent.Agent.DeleteLabs:output_type -> agent.EmptyResponse
+	1,  // 18: agent.Agent.AddLabChallenges:output_type -> agent.EmptyResponse
+	1,  // 19: agent.Agent.DeleteLabsChallenges:output_type -> agent.EmptyResponse
+	8,  // 20: agent.Agent.GetLabs:output_type -> agent.GetLabsResponse
+	1,  // 21: agent.Agent.StartChallenge:output_type -> agent.EmptyResponse
+	1,  // 22: agent.Agent.StopChallenge:output_type -> agent.EmptyResponse
+	1,  // 23: agent.Agent.ResetChallenge:output_type -> agent.EmptyResponse
+	15, // [15:24] is the sub-list for method output_type
+	6,  // [6:15] is the sub-list for method input_type
 	6,  // [6:6] is the sub-list for extension type_name
 	6,  // [6:6] is the sub-list for extension extendee
 	0,  // [0:6] is the sub-list for field type_name
@@ -994,7 +1039,7 @@ func file_agent_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_agent_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*EmptyResponse); i {
+			switch v := v.(*EmptyRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1006,7 +1051,7 @@ func file_agent_proto_init() {
 			}
 		}
 		file_agent_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CreateLabRequest); i {
+			switch v := v.(*EmptyResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1018,7 +1063,7 @@ func file_agent_proto_init() {
 			}
 		}
 		file_agent_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetLabsRequest); i {
+			switch v := v.(*CreateLabRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1030,7 +1075,7 @@ func file_agent_proto_init() {
 			}
 		}
 		file_agent_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DeleteLabsRequest); i {
+			switch v := v.(*GetLabsRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1042,7 +1087,7 @@ func file_agent_proto_init() {
 			}
 		}
 		file_agent_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*AddLabChallengesRequest); i {
+			switch v := v.(*DeleteLabsRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1054,7 +1099,7 @@ func file_agent_proto_init() {
 			}
 		}
 		file_agent_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DeleteLabsChallengesRequest); i {
+			switch v := v.(*AddLabChallengesRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1066,7 +1111,7 @@ func file_agent_proto_init() {
 			}
 		}
 		file_agent_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CreateLabResponse); i {
+			switch v := v.(*DeleteLabsChallengesRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1078,7 +1123,7 @@ func file_agent_proto_init() {
 			}
 		}
 		file_agent_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetLabsResponse); i {
+			switch v := v.(*CreateLabResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1090,7 +1135,7 @@ func file_agent_proto_init() {
 			}
 		}
 		file_agent_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Lab); i {
+			switch v := v.(*GetLabsResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1102,7 +1147,7 @@ func file_agent_proto_init() {
 			}
 		}
 		file_agent_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Challenge); i {
+			switch v := v.(*Lab); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1114,7 +1159,7 @@ func file_agent_proto_init() {
 			}
 		}
 		file_agent_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Instance); i {
+			switch v := v.(*Challenge); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1126,7 +1171,7 @@ func file_agent_proto_init() {
 			}
 		}
 		file_agent_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Resources); i {
+			switch v := v.(*Instance); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1138,7 +1183,7 @@ func file_agent_proto_init() {
 			}
 		}
 		file_agent_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*EnvVariable); i {
+			switch v := v.(*Resources); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1150,7 +1195,7 @@ func file_agent_proto_init() {
 			}
 		}
 		file_agent_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DNSRecord); i {
+			switch v := v.(*EnvVariable); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1162,6 +1207,18 @@ func file_agent_proto_init() {
 			}
 		}
 		file_agent_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DNSRecord); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_agent_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ChallengeRequest); i {
 			case 0:
 				return &v.state
@@ -1180,7 +1237,7 @@ func file_agent_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_agent_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   15,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

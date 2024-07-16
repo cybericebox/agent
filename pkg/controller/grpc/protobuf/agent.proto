@@ -3,6 +3,9 @@ package agent;
 option go_package = "github.com/cybericebox/agent/pkg/controller/grpc/protobuf";
 
 service Agent {
+  // metrics
+  rpc Ping(EmptyRequest) returns (EmptyResponse) {}
+
   // laboratory
   rpc CreateLab(CreateLabRequest) returns (CreateLabResponse) {}
   rpc DeleteLabs(DeleteLabsRequest) returns (EmptyResponse) {}
@@ -17,6 +20,8 @@ service Agent {
   rpc ResetChallenge(ChallengeRequest) returns (EmptyResponse) {}
 
 }
+
+message EmptyRequest {}
 
 message EmptyResponse {}
 

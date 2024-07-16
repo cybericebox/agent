@@ -19,6 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion8
 
 const (
+	Agent_Ping_FullMethodName                 = "/agent.Agent/Ping"
 	Agent_CreateLab_FullMethodName            = "/agent.Agent/CreateLab"
 	Agent_DeleteLabs_FullMethodName           = "/agent.Agent/DeleteLabs"
 	Agent_AddLabChallenges_FullMethodName     = "/agent.Agent/AddLabChallenges"
@@ -33,6 +34,8 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AgentClient interface {
+	// metrics
+	Ping(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
 	// laboratory
 	CreateLab(ctx context.Context, in *CreateLabRequest, opts ...grpc.CallOption) (*CreateLabResponse, error)
 	DeleteLabs(ctx context.Context, in *DeleteLabsRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
@@ -51,6 +54,16 @@ type agentClient struct {
 
 func NewAgentClient(cc grpc.ClientConnInterface) AgentClient {
 	return &agentClient{cc}
+}
+
+func (c *agentClient) Ping(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*EmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EmptyResponse)
+	err := c.cc.Invoke(ctx, Agent_Ping_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *agentClient) CreateLab(ctx context.Context, in *CreateLabRequest, opts ...grpc.CallOption) (*CreateLabResponse, error) {
@@ -137,6 +150,8 @@ func (c *agentClient) ResetChallenge(ctx context.Context, in *ChallengeRequest, 
 // All implementations must embed UnimplementedAgentServer
 // for forward compatibility
 type AgentServer interface {
+	// metrics
+	Ping(context.Context, *EmptyRequest) (*EmptyResponse, error)
 	// laboratory
 	CreateLab(context.Context, *CreateLabRequest) (*CreateLabResponse, error)
 	DeleteLabs(context.Context, *DeleteLabsRequest) (*EmptyResponse, error)
@@ -154,6 +169,9 @@ type AgentServer interface {
 type UnimplementedAgentServer struct {
 }
 
+func (UnimplementedAgentServer) Ping(context.Context, *EmptyRequest) (*EmptyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
+}
 func (UnimplementedAgentServer) CreateLab(context.Context, *CreateLabRequest) (*CreateLabResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateLab not implemented")
 }
@@ -189,6 +207,24 @@ type UnsafeAgentServer interface {
 
 func RegisterAgentServer(s grpc.ServiceRegistrar, srv AgentServer) {
 	s.RegisterService(&Agent_ServiceDesc, srv)
+}
+
+func _Agent_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EmptyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentServer).Ping(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Agent_Ping_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentServer).Ping(ctx, req.(*EmptyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Agent_CreateLab_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -342,6 +378,10 @@ var Agent_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "agent.Agent",
 	HandlerType: (*AgentServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Ping",
+			Handler:    _Agent_Ping_Handler,
+		},
 		{
 			MethodName: "CreateLab",
 			Handler:    _Agent_CreateLab_Handler,
