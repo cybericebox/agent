@@ -24,9 +24,11 @@ func Run() {
 	)
 
 	// test if the service is working properly
+	log.Debug().Msg("Testing service")
 	if err := serv.Test(); err != nil {
 		log.Fatal().Err(err).Msg("Service initial test failed")
 	}
+	log.Info().Msg("Service test passed")
 
 	ctrl := controller.NewController(controller.Dependencies{
 		Config:  &cfg.Controller,

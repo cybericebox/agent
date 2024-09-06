@@ -16,13 +16,13 @@ const (
 	dnsName       = "dns-server"
 	dnsConfigName = "dns-config"
 
-	image = "coredns/coredns:1.10.0"
+	image = "coredns/coredns:1.11.1"
 
 	coreFile = "Corefile"
 	zoneFile = "zonefile"
 
 	coreFileContent = `. {
-    file zonefile
+    file /zonefile
     prometheus     # enable metrics
     errors         # show errors
     log            # enable query logs
@@ -88,11 +88,11 @@ func (dns *DNSService) CreateDNSServer(ctx context.Context, labID, ip string) er
 		Resources: model.ResourcesConfig{
 			Requests: model.ResourceConfig{
 				Memory: "50Mi",
-				CPU:    "300m",
+				CPU:    "5m",
 			},
 			Limit: model.ResourceConfig{
 				Memory: "50Mi",
-				CPU:    "300m",
+				CPU:    "10m",
 			},
 		},
 		Args: []string{"-conf", fmt.Sprintf("/%s", coreFile)},
@@ -146,6 +146,14 @@ func newDNSServer(infrastructure Infrastructure, labId string) *DNSServer {
 	}
 }
 
+func (dns *DNSServer) reset(ctx context.Context) error {
+	if err := dns.infrastructure.ResetDeployment(ctx, dnsName, dns.labID); err != nil {
+		return fmt.Errorf("failed to reset deployment: [%w]", err)
+	}
+
+	return nil
+}
+
 func (dns *DNSServer) generateZoneConfig() (string, error) {
 	var tpl bytes.Buffer
 
@@ -190,14 +198,6 @@ func (dns *DNSServer) getRecords(ctx context.Context) error {
 	}
 
 	dns.records = helper.RecordsFromStr(data[config.RecordsListLabel])
-
-	return nil
-}
-
-func (dns *DNSServer) reset(ctx context.Context) error {
-	if err := dns.infrastructure.ResetDeployment(ctx, dnsName, dns.labID); err != nil {
-		return fmt.Errorf("failed to reset deployment: [%w]", err)
-	}
 
 	return nil
 }

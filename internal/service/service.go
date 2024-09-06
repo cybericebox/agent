@@ -70,7 +70,7 @@ func (s *Service) Test() error {
 	// try to create a new lab
 	labID, err := s.LabService.CreateLab(ctx, 26)
 	if err != nil {
-		errs = multierror.Append(errs, fmt.Errorf("failed to create test lab: [%w]", err))
+		return fmt.Errorf("failed to create test lab: [%w]", err)
 	}
 
 	// try to add a challenge to the lab

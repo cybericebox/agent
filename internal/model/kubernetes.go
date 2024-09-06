@@ -3,15 +3,17 @@ package model
 type ApplyDeploymentConfig struct {
 	Name           string
 	LabID          string
+	Labels         map[string]string
 	ReplicaCount   int32
 	Image          string
 	IP             string
-	Labels         map[string]string
+	DNS            string
 	Resources      ResourcesConfig
 	Envs           []EnvConfig
 	Args           []string
 	Volumes        []Volume
 	Privileged     bool
+	UsePublicDNS   bool
 	CapAdds        []string
 	ReadinessProbe *Probe
 }
