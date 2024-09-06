@@ -22,9 +22,9 @@ type (
 func (a *Agent) GetLabs(ctx context.Context, request *protobuf.GetLabsRequest) (*protobuf.GetLabsResponse, error) {
 	var errs error
 
-	labs := make([]*protobuf.Lab, 0, len(request.GetLabIDs()))
+	labs := make([]*protobuf.Lab, 0, len(request.GetIds()))
 
-	for _, id := range request.GetLabIDs() {
+	for _, id := range request.GetIds() {
 		lab, err := a.service.GetLab(ctx, id)
 		if err != nil {
 			errs = multierror.Append(errs, err)
@@ -38,7 +38,7 @@ func (a *Agent) GetLabs(ctx context.Context, request *protobuf.GetLabsRequest) (
 	}
 
 	if errs != nil {
-		return &protobuf.GetLabsResponse{}, errs
+		return nil, errs
 	}
 
 	return &protobuf.GetLabsResponse{
@@ -46,28 +46,38 @@ func (a *Agent) GetLabs(ctx context.Context, request *protobuf.GetLabsRequest) (
 	}, nil
 }
 
-func (a *Agent) CreateLab(ctx context.Context, request *protobuf.CreateLabRequest) (*protobuf.CreateLabResponse, error) {
+func (a *Agent) CreateLabs(ctx context.Context, request *protobuf.CreateLabsRequest) (*protobuf.CreateLabsResponse, error) {
+	labIDs := make([]string, 0, request.GetCount())
+	var errs error
 
-	labID, err := a.service.CreateLab(ctx, request.GetCidrMask())
-	if err != nil {
-		log.Error().Err(err).Msg("Failed to create lab")
-		return &protobuf.CreateLabResponse{}, err
+	for i := uint32(0); i < request.GetCount(); i++ {
+		labID, err := a.service.CreateLab(ctx, request.GetCidrMask())
+		if err != nil {
+			errs = multierror.Append(errs, err)
+			continue
+		}
+		labIDs = append(labIDs, labID)
 	}
 
-	return &protobuf.CreateLabResponse{
-		Id: labID,
+	if errs != nil {
+		log.Error().Err(errs).Msg("Failed to create labs")
+		return nil, errs
+	}
+
+	return &protobuf.CreateLabsResponse{
+		Ids: labIDs,
 	}, nil
 }
 
 func (a *Agent) DeleteLabs(ctx context.Context, request *protobuf.DeleteLabsRequest) (*protobuf.EmptyResponse, error) {
 	var errs error
-	for _, id := range request.GetLabIDs() {
+	for _, id := range request.GetIds() {
 		if err := a.service.DeleteLab(ctx, id); err != nil {
 			errs = multierror.Append(errs, err)
 		}
 	}
 	if errs != nil {
-		return &protobuf.EmptyResponse{}, errs
+		return nil, errs
 	}
 
 	return &protobuf.EmptyResponse{}, nil
@@ -125,7 +135,7 @@ func (a *Agent) AddLabChallenges(ctx context.Context, request *protobuf.AddLabCh
 	}
 
 	if errs != nil {
-		return &protobuf.EmptyResponse{}, errs
+		return nil, errs
 	}
 
 	return &protobuf.EmptyResponse{}, nil
@@ -141,7 +151,7 @@ func (a *Agent) DeleteLabsChallenges(ctx context.Context, request *protobuf.Dele
 	}
 
 	if errs != nil {
-		return &protobuf.EmptyResponse{}, errs
+		return nil, errs
 	}
 
 	return &protobuf.EmptyResponse{}, nil

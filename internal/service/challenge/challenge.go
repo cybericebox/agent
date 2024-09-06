@@ -54,6 +54,15 @@ func (s *ChallengeService) CreateChallenge(ctx context.Context, lab *model.Lab, 
 			continue
 		}
 
+		dns, err := lab.CIDRManager.GetFirstIP()
+		if err != nil {
+			errs = multierror.Append(errs, fmt.Errorf("failed to get dns for instance: [%w]", err))
+			if err = lab.CIDRManager.ReleaseSingleIP(ctx, ip); err != nil {
+				errs = multierror.Append(errs, fmt.Errorf("failed to release ip for instance in dns: [%w]", err))
+			}
+			continue
+		}
+
 		if err = s.infrastructure.ApplyDeployment(ctx, model.ApplyDeploymentConfig{
 			Name:  inst.Id,
 			LabID: lab.ID.String(),
@@ -64,10 +73,12 @@ func (s *ChallengeService) CreateChallenge(ctx context.Context, lab *model.Lab, 
 				config.InstanceIDLabel:  inst.Id,
 				config.RecordsListLabel: helper.RecordsToStr(inst.Records),
 			},
-			Image:     inst.Image,
-			Resources: inst.Resources,
-			Envs:      inst.Envs,
-			IP:        ip,
+			Image:        inst.Image,
+			IP:           ip,
+			DNS:          dns,
+			UsePublicDNS: true,
+			Resources:    inst.Resources,
+			Envs:         inst.Envs,
 		}); err != nil {
 			errs = multierror.Append(errs, fmt.Errorf("failed to apply deployment for instance: [%w]", err))
 			if err = lab.CIDRManager.ReleaseSingleIP(ctx, ip); err != nil {

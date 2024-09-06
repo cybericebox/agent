@@ -3,8 +3,11 @@ package agent;
 option go_package = "github.com/cybericebox/agent/pkg/controller/grpc/protobuf";
 
 service Agent {
+  // metrics
+  rpc Ping(EmptyRequest) returns (EmptyResponse) {}
+
   // laboratory
-  rpc CreateLab(CreateLabRequest) returns (CreateLabResponse) {}
+  rpc CreateLabs(CreateLabsRequest) returns (CreateLabsResponse) {}
   rpc DeleteLabs(DeleteLabsRequest) returns (EmptyResponse) {}
   rpc AddLabChallenges(AddLabChallengesRequest) returns (EmptyResponse) {}
   rpc DeleteLabsChallenges(DeleteLabsChallengesRequest) returns (EmptyResponse) {}
@@ -18,21 +21,24 @@ service Agent {
 
 }
 
+message EmptyRequest {}
+
 message EmptyResponse {}
 
 
 // agent
 
-message CreateLabRequest {
+message CreateLabsRequest {
   uint32 cidrMask = 1;
+  uint32 count = 2;
 }
 
 message GetLabsRequest {
-  repeated string labIDs = 1;
+  repeated string ids = 1;
 }
 
 message DeleteLabsRequest {
-  repeated string labIDs = 1;
+  repeated string ids = 1;
 }
 
 message AddLabChallengesRequest {
@@ -45,8 +51,8 @@ message DeleteLabsChallengesRequest {
   repeated string challengeIDs = 2;
 }
 
-message CreateLabResponse {
-  string id = 1;
+message CreateLabsResponse {
+  repeated string ids = 1;
 }
 
 message GetLabsResponse {

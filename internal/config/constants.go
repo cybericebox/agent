@@ -3,12 +3,14 @@ package config
 const (
 	PlatformLabel    = "cybericebox"
 	LabIDLabel       = "labID"
-	Lab              = "lab"
-	LabNetwork       = "labNetwork"
-	LabDNSServer     = "labDNSServer"
-	LabDNSConfig     = "labDNSConfig"
 	ChallengeIDLabel = "challengeID"
-	Challenge        = "challenge"
 	InstanceIDLabel  = "instanceID"
+
+	Lab          = "lab"
+	LabNetwork   = "labNetwork"
+	LabDNSServer = "labDNSServer"
+	LabDNSConfig = "labDNSConfig"
+	Challenge    = "challenge"
+
 	RecordsListLabel = "recordsList"
 )

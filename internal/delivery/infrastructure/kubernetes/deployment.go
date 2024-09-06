@@ -120,6 +120,16 @@ func (k *Kubernetes) ApplyDeployment(ctx context.Context, cfg model.ApplyDeploym
 			WithExec(v13.ExecAction().WithCommand(cfg.ReadinessProbe.Cmd...)))
 	}
 
+	dnsConfig := v13.PodDNSConfig()
+	//dnsPolicy := coreV1.DNSDefault
+	if cfg.DNS != "" {
+		dnsConfig = dnsConfig.WithNameservers(strings.Split(cfg.DNS, "/")[0])
+		//dnsPolicy = coreV1.DNSNone
+	}
+	if cfg.UsePublicDNS {
+		dnsConfig = dnsConfig.WithNameservers("1.1.1.1", "8.8.8.8")
+	}
+
 	_, err := k.kubeClient.AppsV1().Deployments(cfg.LabID).Apply(
 		ctx,
 		v1.Deployment(cfg.Name, cfg.LabID).WithLabels(cfg.Labels).
@@ -135,6 +145,9 @@ func (k *Kubernetes) ApplyDeployment(ctx context.Context, cfg model.ApplyDeploym
 					WithLabels(cfg.Labels).
 					WithAnnotations(annotations).
 					WithSpec(v13.PodSpec().
+						//WithDNSPolicy(dnsPolicy).
+						WithRestartPolicy(coreV1.RestartPolicyAlways).
+						WithDNSConfig(dnsConfig).
 						WithVolumes(volumes...).
 						WithContainers(container.
 							WithName(cfg.Name).

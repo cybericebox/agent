@@ -19,7 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion8
 
 const (
-	Agent_CreateLab_FullMethodName            = "/agent.Agent/CreateLab"
+	Agent_Ping_FullMethodName                 = "/agent.Agent/Ping"
+	Agent_CreateLabs_FullMethodName           = "/agent.Agent/CreateLabs"
 	Agent_DeleteLabs_FullMethodName           = "/agent.Agent/DeleteLabs"
 	Agent_AddLabChallenges_FullMethodName     = "/agent.Agent/AddLabChallenges"
 	Agent_DeleteLabsChallenges_FullMethodName = "/agent.Agent/DeleteLabsChallenges"
@@ -33,8 +34,10 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AgentClient interface {
+	// metrics
+	Ping(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
 	// laboratory
-	CreateLab(ctx context.Context, in *CreateLabRequest, opts ...grpc.CallOption) (*CreateLabResponse, error)
+	CreateLabs(ctx context.Context, in *CreateLabsRequest, opts ...grpc.CallOption) (*CreateLabsResponse, error)
 	DeleteLabs(ctx context.Context, in *DeleteLabsRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
 	AddLabChallenges(ctx context.Context, in *AddLabChallengesRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
 	DeleteLabsChallenges(ctx context.Context, in *DeleteLabsChallengesRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
@@ -53,10 +56,20 @@ func NewAgentClient(cc grpc.ClientConnInterface) AgentClient {
 	return &agentClient{cc}
 }
 
-func (c *agentClient) CreateLab(ctx context.Context, in *CreateLabRequest, opts ...grpc.CallOption) (*CreateLabResponse, error) {
+func (c *agentClient) Ping(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*EmptyResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CreateLabResponse)
-	err := c.cc.Invoke(ctx, Agent_CreateLab_FullMethodName, in, out, cOpts...)
+	out := new(EmptyResponse)
+	err := c.cc.Invoke(ctx, Agent_Ping_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *agentClient) CreateLabs(ctx context.Context, in *CreateLabsRequest, opts ...grpc.CallOption) (*CreateLabsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateLabsResponse)
+	err := c.cc.Invoke(ctx, Agent_CreateLabs_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -137,8 +150,10 @@ func (c *agentClient) ResetChallenge(ctx context.Context, in *ChallengeRequest, 
 // All implementations must embed UnimplementedAgentServer
 // for forward compatibility
 type AgentServer interface {
+	// metrics
+	Ping(context.Context, *EmptyRequest) (*EmptyResponse, error)
 	// laboratory
-	CreateLab(context.Context, *CreateLabRequest) (*CreateLabResponse, error)
+	CreateLabs(context.Context, *CreateLabsRequest) (*CreateLabsResponse, error)
 	DeleteLabs(context.Context, *DeleteLabsRequest) (*EmptyResponse, error)
 	AddLabChallenges(context.Context, *AddLabChallengesRequest) (*EmptyResponse, error)
 	DeleteLabsChallenges(context.Context, *DeleteLabsChallengesRequest) (*EmptyResponse, error)
@@ -154,8 +169,11 @@ type AgentServer interface {
 type UnimplementedAgentServer struct {
 }
 
-func (UnimplementedAgentServer) CreateLab(context.Context, *CreateLabRequest) (*CreateLabResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateLab not implemented")
+func (UnimplementedAgentServer) Ping(context.Context, *EmptyRequest) (*EmptyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
+}
+func (UnimplementedAgentServer) CreateLabs(context.Context, *CreateLabsRequest) (*CreateLabsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateLabs not implemented")
 }
 func (UnimplementedAgentServer) DeleteLabs(context.Context, *DeleteLabsRequest) (*EmptyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteLabs not implemented")
@@ -191,20 +209,38 @@ func RegisterAgentServer(s grpc.ServiceRegistrar, srv AgentServer) {
 	s.RegisterService(&Agent_ServiceDesc, srv)
 }
 
-func _Agent_CreateLab_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateLabRequest)
+func _Agent_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EmptyRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AgentServer).CreateLab(ctx, in)
+		return srv.(AgentServer).Ping(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Agent_CreateLab_FullMethodName,
+		FullMethod: Agent_Ping_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AgentServer).CreateLab(ctx, req.(*CreateLabRequest))
+		return srv.(AgentServer).Ping(ctx, req.(*EmptyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Agent_CreateLabs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateLabsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentServer).CreateLabs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Agent_CreateLabs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentServer).CreateLabs(ctx, req.(*CreateLabsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -343,8 +379,12 @@ var Agent_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*AgentServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "CreateLab",
-			Handler:    _Agent_CreateLab_Handler,
+			MethodName: "Ping",
+			Handler:    _Agent_Ping_Handler,
+		},
+		{
+			MethodName: "CreateLabs",
+			Handler:    _Agent_CreateLabs_Handler,
 		},
 		{
 			MethodName: "DeleteLabs",
