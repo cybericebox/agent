@@ -155,6 +155,7 @@ func (s *LabService) CreateLab(ctx context.Context, subnetMask uint32) (string, 
 		if err1 := s.ipaManager.ReleaseChildCIDR(ctx, lab.CIDRManager.GetCIDR()); err1 != nil {
 			return "", fmt.Errorf("failed to release child cidr in acquire single ip: [%w]", err1)
 		}
+		return "", fmt.Errorf("failed to create dns server: [%w]", err)
 	}
 
 	return lab.ID.String(), nil
