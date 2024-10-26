@@ -146,7 +146,6 @@ func (k *Kubernetes) ApplyDeployment(ctx context.Context, cfg model.ApplyDeploym
 					WithAnnotations(annotations).
 					WithSpec(v13.PodSpec().
 						//WithDNSPolicy(dnsPolicy).
-						WithHostname("task_instance").
 						WithRestartPolicy(coreV1.RestartPolicyAlways).
 						WithDNSConfig(dnsConfig).
 						WithVolumes(volumes...).

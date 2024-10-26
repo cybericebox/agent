@@ -108,11 +108,11 @@ func (s *LabService) CreateLab(ctx context.Context, subnetMask uint32) (string, 
 	labPool := lab.ID.String()
 	// create namespace
 	if err = s.infrastructure.ApplyNamespace(ctx, lab.ID.String(), &labPool); err != nil {
-		if err1 := s.ipaManager.ReleaseChildCIDR(ctx, lab.CIDRManager.GetCIDR()); err1 != nil {
-			return "", fmt.Errorf("failed to release child cidr in apply namespace: [%w]", err1)
-		}
 		if err1 := s.infrastructure.DeleteNetwork(ctx, lab.ID.String()); err1 != nil {
 			return "", fmt.Errorf("failed to delete network in apply namespace: [%w]", err1)
+		}
+		if err1 := s.ipaManager.ReleaseChildCIDR(ctx, lab.CIDRManager.GetCIDR()); err1 != nil {
+			return "", fmt.Errorf("failed to release child cidr in apply namespace: [%w]", err1)
 		}
 		return "", fmt.Errorf("failed to apply namespace: [%w]", err)
 	}
@@ -146,9 +146,6 @@ func (s *LabService) CreateLab(ctx context.Context, subnetMask uint32) (string, 
 	}
 
 	if err = s.service.CreateDNSServer(ctx, lab.ID.String(), singleIP); err != nil {
-		if err1 := lab.CIDRManager.ReleaseSingleIP(ctx, singleIP); err1 != nil {
-			return "", fmt.Errorf("failed to create DNS server: [%w]", err)
-		}
 		if err1 := s.infrastructure.DeleteNamespace(ctx, lab.ID.String()); err1 != nil {
 			return "", fmt.Errorf("failed to delete namespace in acquire single ip: [%w]", err1)
 		}
