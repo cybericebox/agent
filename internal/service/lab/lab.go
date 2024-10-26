@@ -18,10 +18,13 @@ type (
 		ApplyNamespace(ctx context.Context, name string, ipPoolName *string) error
 		NamespaceExists(ctx context.Context, name string) (bool, error)
 		DeleteNamespace(ctx context.Context, name string) error
+
+		ApplyNetworkPolicy(ctx context.Context, labID string) error
 	}
 
 	ipaManager interface {
 		AcquireSingleIP(ctx context.Context, specificIP ...string) (string, error)
+		ReleaseSingleIP(ctx context.Context, ip string) error
 		AcquireChildCIDR(ctx context.Context, blockSize uint32) (*ipam.IPAManager, error)
 		ReleaseChildCIDR(ctx context.Context, childCIDR string) error
 		GetChildCIDR(ctx context.Context, cidr string) (*ipam.IPAManager, error)
@@ -108,16 +111,53 @@ func (s *LabService) CreateLab(ctx context.Context, subnetMask uint32) (string, 
 		if err1 := s.ipaManager.ReleaseChildCIDR(ctx, lab.CIDRManager.GetCIDR()); err1 != nil {
 			return "", fmt.Errorf("failed to release child cidr in apply namespace: [%w]", err1)
 		}
+		if err1 := s.infrastructure.DeleteNetwork(ctx, lab.ID.String()); err1 != nil {
+			return "", fmt.Errorf("failed to delete network in apply namespace: [%w]", err1)
+		}
 		return "", fmt.Errorf("failed to apply namespace: [%w]", err)
+	}
+
+	// set network policy
+	if err = s.infrastructure.ApplyNetworkPolicy(ctx, lab.ID.String()); err != nil {
+		if err1 := s.infrastructure.DeleteNamespace(ctx, lab.ID.String()); err1 != nil {
+			return "", fmt.Errorf("failed to delete namespace in apply network policy: [%w]", err1)
+		}
+		if err1 := s.infrastructure.DeleteNetwork(ctx, lab.ID.String()); err1 != nil {
+			return "", fmt.Errorf("failed to delete network in apply network policy: [%w]", err1)
+		}
+		if err1 := s.ipaManager.ReleaseChildCIDR(ctx, lab.CIDRManager.GetCIDR()); err1 != nil {
+			return "", fmt.Errorf("failed to release child cidr in apply network policy: [%w]", err1)
+		}
+		return "", fmt.Errorf("failed to apply network policy: [%w]", err)
 	}
 
 	singleIP, err := lab.CIDRManager.AcquireSingleIP(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to acquire DNS ip: [%w]", err)
+		if err1 := s.infrastructure.DeleteNamespace(ctx, lab.ID.String()); err1 != nil {
+			return "", fmt.Errorf("failed to delete namespace in acquire single ip: [%w]", err1)
+		}
+		if err1 := s.infrastructure.DeleteNetwork(ctx, lab.ID.String()); err1 != nil {
+			return "", fmt.Errorf("failed to delete network in acquire single ip: [%w]", err1)
+		}
+		if err1 := s.ipaManager.ReleaseChildCIDR(ctx, lab.CIDRManager.GetCIDR()); err1 != nil {
+			return "", fmt.Errorf("failed to release child cidr in acquire single ip: [%w]", err1)
+		}
+		return "", fmt.Errorf("failed to acquire single ip: [%w]", err)
 	}
 
 	if err = s.service.CreateDNSServer(ctx, lab.ID.String(), singleIP); err != nil {
-		return "", fmt.Errorf("failed to create DNS server: [%w]", err)
+		if err1 := lab.CIDRManager.ReleaseSingleIP(ctx, singleIP); err1 != nil {
+			return "", fmt.Errorf("failed to create DNS server: [%w]", err)
+		}
+		if err1 := s.infrastructure.DeleteNamespace(ctx, lab.ID.String()); err1 != nil {
+			return "", fmt.Errorf("failed to delete namespace in acquire single ip: [%w]", err1)
+		}
+		if err1 := s.infrastructure.DeleteNetwork(ctx, lab.ID.String()); err1 != nil {
+			return "", fmt.Errorf("failed to delete network in acquire single ip: [%w]", err1)
+		}
+		if err1 := s.ipaManager.ReleaseChildCIDR(ctx, lab.CIDRManager.GetCIDR()); err1 != nil {
+			return "", fmt.Errorf("failed to release child cidr in acquire single ip: [%w]", err1)
+		}
 	}
 
 	return lab.ID.String(), nil

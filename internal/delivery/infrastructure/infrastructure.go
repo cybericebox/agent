@@ -8,8 +8,8 @@ type (
 	}
 )
 
-func NewInfrastructure() *Infrastructure {
+func NewInfrastructure(podCIDR string) *Infrastructure {
 	return &Infrastructure{
-		k8s.NewKubernetes(),
+		k8s.NewKubernetes(podCIDR),
 	}
 }

@@ -81,12 +81,12 @@ func (s *Service) Test() error {
 			Image: "nginx:latest",
 			Resources: model.ResourcesConfig{
 				Requests: model.ResourceConfig{
-					CPU:    "100m",
-					Memory: "128Mi",
+					CPU:    "5m",
+					Memory: "50Mi",
 				},
 				Limit: model.ResourceConfig{
-					CPU:    "100m",
-					Memory: "128Mi",
+					CPU:    "5m",
+					Memory: "50Mi",
 				},
 			},
 			Envs: []model.EnvConfig{{

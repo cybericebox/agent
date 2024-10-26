@@ -13,9 +13,10 @@ import (
 type Kubernetes struct {
 	kubeClient   *kubernetes.Clientset
 	calicoClient *calico.Clientset
+	podCIDR      string
 }
 
-func NewKubernetes() *Kubernetes {
+func NewKubernetes(podCIDR string) *Kubernetes {
 	kubeconfig := filepath.Join(homedir.HomeDir(), ".kube", "config")
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
@@ -25,7 +26,9 @@ func NewKubernetes() *Kubernetes {
 		}
 	}
 
-	k := &Kubernetes{}
+	k := &Kubernetes{
+		podCIDR: podCIDR,
+	}
 	k.kubeClient, err = kubernetes.NewForConfig(config)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create kubernetes client")

@@ -14,7 +14,7 @@ import (
 func Run() {
 	cfg := config.GetConfig()
 
-	infra := infrastructure.NewInfrastructure()
+	infra := infrastructure.NewInfrastructure(cfg.Service.LabsCIDR)
 
 	serv := service.NewService(
 		service.Dependencies{
