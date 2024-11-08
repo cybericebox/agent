@@ -30,16 +30,21 @@ type (
 		*dns.DNSService
 	}
 
+	Repository interface {
+		lab.Repository
+	}
+
 	Dependencies struct {
-		Config         *config.ServiceConfig
+		Config         *config.Config
 		Infrastructure Infrastructure
+		Repository     Repository
 	}
 )
 
 func NewService(deps Dependencies) *Service {
 	IPAManager, err := ipam.NewIPAManager(ipam.Dependencies{
-		PostgresConfig: ipam.PostgresConfig(deps.Config.Postgres),
-		CIDR:           deps.Config.LabsCIDR,
+		PostgresConfig: ipam.PostgresConfig(deps.Config.Repository.Postgres),
+		CIDR:           deps.Config.Service.LabsCIDR,
 	})
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to initialize IPAManager")
@@ -53,6 +58,7 @@ func NewService(deps Dependencies) *Service {
 		LabService: lab.NewLabService(lab.Dependencies{
 			Infrastructure: deps.Infrastructure,
 			IPAManager:     IPAManager,
+			Repository:     deps.Repository,
 			Service: labService{
 				ChallengeService: challengeService,
 				DNSService:       dns.NewDNSService(deps.Infrastructure),
@@ -62,7 +68,28 @@ func NewService(deps Dependencies) *Service {
 	}
 }
 
+func (s *Service) Restore() error {
+	if err := s.LabService.RestoreLabsFromState(context.Background()); err != nil {
+		return fmt.Errorf("failed to restore labs from state: [%w]", err)
+	}
+	return nil
+}
+
 func (s *Service) Test() error {
+	var errs error
+	if err := s.testNormal(); err != nil {
+		errs = multierror.Append(errs, fmt.Errorf("failed normal test: [%w]", err))
+	}
+	if err := s.testDeletingLabWithChallenges(); err != nil {
+		errs = multierror.Append(errs, fmt.Errorf("failed deleting lab with challenges test: [%w]", err))
+	}
+	if errs != nil {
+		return errs
+	}
+	return nil
+}
+
+func (s *Service) testNormal() error {
 	// test if the service is working properly
 	ctx := context.Background()
 
@@ -106,6 +133,57 @@ func (s *Service) Test() error {
 	if err = s.LabService.DeleteLabChallenges(ctx, labID, []string{"test-challenge"}); err != nil {
 		errs = multierror.Append(errs, fmt.Errorf("failed to delete test challenge from test lab: [%w]", err))
 	}
+	//
+	// try to delete the lab
+	if err = s.LabService.DeleteLab(ctx, labID); err != nil {
+		errs = multierror.Append(errs, fmt.Errorf("failed to delete test lab: [%w]", err))
+	}
+	if errs != nil {
+		return errs
+	}
+	return nil
+}
+
+func (s *Service) testDeletingLabWithChallenges() error {
+	// test if the service is working properly
+	ctx := context.Background()
+
+	var errs error
+	// try to create a new lab
+	labID, err := s.LabService.CreateLab(ctx, 26)
+	if err != nil {
+		return fmt.Errorf("failed to create test lab: [%w]", err)
+	}
+
+	// try to add a challenge to the lab
+	if err = s.LabService.AddLabChallenges(ctx, labID, []model.ChallengeConfig{{
+		Id: "test-challenge",
+		Instances: []model.InstanceConfig{{
+			Id:    "test-instance",
+			Image: "nginx:latest",
+			Resources: model.ResourcesConfig{
+				Requests: model.ResourceConfig{
+					CPU:    "5m",
+					Memory: "50Mi",
+				},
+				Limit: model.ResourceConfig{
+					CPU:    "5m",
+					Memory: "50Mi",
+				},
+			},
+			Envs: []model.EnvConfig{{
+				Name:  "TEST_ENV",
+				Value: "test",
+			}},
+			Records: []model.DNSRecordConfig{{
+				Type: "A",
+				Name: "test.cybericebox.local",
+			}},
+		}},
+	}}); err != nil {
+		errs = multierror.Append(errs, fmt.Errorf("failed to add test challenge to test lab: [%w]", err))
+	}
+
 	//
 	// try to delete the lab
 	if err = s.LabService.DeleteLab(ctx, labID); err != nil {

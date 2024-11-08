@@ -4,6 +4,7 @@ import (
 	"github.com/cybericebox/agent/internal/config"
 	"github.com/cybericebox/agent/internal/delivery/controller"
 	"github.com/cybericebox/agent/internal/delivery/infrastructure"
+	"github.com/cybericebox/agent/internal/delivery/repository"
 	"github.com/cybericebox/agent/internal/service"
 	"github.com/rs/zerolog/log"
 	"os"
@@ -16,10 +17,15 @@ func Run() {
 
 	infra := infrastructure.NewInfrastructure(cfg.Service.LabsCIDR)
 
+	repo := repository.NewRepository(repository.Dependencies{
+		Config: &cfg.Repository,
+	})
+
 	serv := service.NewService(
 		service.Dependencies{
-			Config:         &cfg.Service,
+			Config:         cfg,
 			Infrastructure: infra,
+			Repository:     repo,
 		},
 	)
 
@@ -29,6 +35,12 @@ func Run() {
 		log.Fatal().Err(err).Msg("Service initial test failed")
 	}
 	log.Info().Msg("Service test passed")
+
+	// restore the state of the service
+	log.Debug().Msg("Restoring service state")
+	if err := serv.Restore(); err != nil {
+		log.Fatal().Err(err).Msg("Service state restore failed")
+	}
 
 	ctrl := controller.NewController(controller.Dependencies{
 		Config:  &cfg.Controller,

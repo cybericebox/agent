@@ -8,11 +8,14 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+var MigrationPath string
+
 type (
 	Config struct {
 		Debug      bool             `yaml:"debug" env:"AGENT_DEBUG" env-default:"false" env-description:"Debug mode"`
 		Controller ControllerConfig `yaml:"controller"`
 		Service    ServiceConfig    `yaml:"service"`
+		Repository RepositoryConfig `yaml:"repository"`
 	}
 
 	ControllerConfig struct {
@@ -39,7 +42,10 @@ type (
 
 	ServiceConfig struct {
 		LabsCIDR string `yaml:"labsCIDR" env:"LABS_CIDR" env-default:"128.0.0.0/8" env-description:"Labs subnet"`
-		Postgres PostgresConfig
+	}
+
+	RepositoryConfig struct {
+		Postgres PostgresConfig `yaml:"postgres"`
 	}
 
 	// PostgresConfig is the configuration for the Postgres database
@@ -75,6 +81,11 @@ func GetConfig() *Config {
 		fmt.Println(help)
 		log.Fatal().Err(err).Msg("Failed to read config")
 		return nil
+	}
+
+	MigrationPath = "migrations"
+	if instance.Debug {
+		MigrationPath = "internal/delivery/repository/postgres/migrations"
 	}
 
 	// set log mode

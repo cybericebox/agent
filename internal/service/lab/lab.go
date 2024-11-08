@@ -3,10 +3,12 @@ package lab
 import (
 	"context"
 	"fmt"
+	"github.com/cybericebox/agent/internal/delivery/repository/postgres"
 	"github.com/cybericebox/agent/internal/model"
 	"github.com/cybericebox/wireguard/pkg/ipam"
 	"github.com/gofrs/uuid"
 	"github.com/hashicorp/go-multierror"
+	"net/netip"
 )
 
 type (
@@ -20,6 +22,12 @@ type (
 		DeleteNamespace(ctx context.Context, name string) error
 
 		ApplyNetworkPolicy(ctx context.Context, labID string) error
+	}
+
+	Repository interface {
+		GetLaboratories(ctx context.Context) ([]postgres.Laboratory, error)
+		CreateLaboratory(ctx context.Context, laboratory postgres.CreateLaboratoryParams) error
+		DeleteLaboratory(ctx context.Context, id uuid.UUID) (int64, error)
 	}
 
 	ipaManager interface {
@@ -49,17 +57,50 @@ type (
 		infrastructure Infrastructure
 		ipaManager     ipaManager
 		service        service
+		repository     Repository
 	}
 
 	Dependencies struct {
 		Infrastructure Infrastructure
 		IPAManager     ipaManager
 		Service        service
+		Repository     Repository
 	}
 )
 
 func NewLabService(deps Dependencies) *LabService {
-	return &LabService{infrastructure: deps.Infrastructure, ipaManager: deps.IPAManager, service: deps.Service}
+	return &LabService{infrastructure: deps.Infrastructure, ipaManager: deps.IPAManager, service: deps.Service, repository: deps.Repository}
+}
+
+func (s *LabService) RestoreLabsFromState(ctx context.Context) error {
+	// get all the labs in the state
+	labs, err := s.repository.GetLaboratories(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get labs from state: [%w]", err)
+	}
+
+	var errs error
+
+	// check if the labs exist in the infrastructure
+	for _, lab := range labs {
+		exists, err := s.infrastructure.NamespaceExists(ctx, lab.ID.String())
+		if err != nil {
+			errs = multierror.Append(errs, fmt.Errorf("failed to check if namespace exists: [%w]", err))
+			continue
+		}
+		if !exists {
+			// create the lab in the infrastructure
+			if err = s.CreateSpecificLab(ctx, uint32(lab.Cidr.Bits()), lab.ID, lab.Cidr); err != nil {
+				errs = multierror.Append(errs, fmt.Errorf("failed to create lab in infrastructure: [%w]", err))
+			}
+		}
+	}
+
+	if errs != nil {
+		return fmt.Errorf("failed to restore labs from state: [%w]", errs)
+	}
+
+	return nil
 }
 
 func (s *LabService) GetLab(ctx context.Context, labID string) (*model.Lab, error) {
@@ -158,7 +199,100 @@ func (s *LabService) CreateLab(ctx context.Context, subnetMask uint32) (string, 
 		return "", fmt.Errorf("failed to create dns server: [%w]", err)
 	}
 
+	// save lab to db
+
+	cidr, err := netip.ParsePrefix(lab.CIDRManager.GetCIDR())
+	if err != nil {
+		return "", fmt.Errorf("failed to parse cidr: [%w]", err)
+	}
+
+	if err = s.repository.CreateLaboratory(ctx, postgres.CreateLaboratoryParams{
+		ID:   lab.ID,
+		Cidr: cidr,
+	}); err != nil {
+		if err1 := s.DeleteLab(ctx, lab.ID.String()); err1 != nil {
+			return "", fmt.Errorf("failed to delete lab: [%w]", err1)
+		}
+		return "", fmt.Errorf("failed to create lab: [%w]", err)
+	}
+
 	return lab.ID.String(), nil
+}
+
+func (s *LabService) CreateSpecificLab(ctx context.Context, subnetMask uint32, labID uuid.UUID, cidr netip.Prefix) error {
+	var err error
+
+	lab := &model.Lab{
+		ID: labID,
+	}
+
+	lab.CIDRManager, err = s.ipaManager.GetChildCIDR(ctx, cidr.String())
+	if err != nil {
+		return fmt.Errorf("failed to get child cidr: [%w]", err)
+	}
+
+	// create network
+	if err = s.infrastructure.ApplyNetwork(ctx, lab.ID.String(), lab.CIDRManager.GetCIDR(), int(subnetMask)); err != nil {
+		if err1 := s.ipaManager.ReleaseChildCIDR(ctx, lab.CIDRManager.GetCIDR()); err1 != nil {
+			return fmt.Errorf("failed to release child cidr in apply network: [%w]", err1)
+		}
+		return fmt.Errorf("failed to apply network: [%w]", err)
+	}
+
+	labPool := lab.ID.String()
+	// create namespace
+	if err = s.infrastructure.ApplyNamespace(ctx, lab.ID.String(), &labPool); err != nil {
+		if err1 := s.infrastructure.DeleteNetwork(ctx, lab.ID.String()); err1 != nil {
+			return fmt.Errorf("failed to delete network in apply namespace: [%w]", err1)
+		}
+		if err1 := s.ipaManager.ReleaseChildCIDR(ctx, lab.CIDRManager.GetCIDR()); err1 != nil {
+			return fmt.Errorf("failed to release child cidr in apply namespace: [%w]", err1)
+		}
+		return fmt.Errorf("failed to apply namespace: [%w]", err)
+	}
+
+	// set network policy
+	if err = s.infrastructure.ApplyNetworkPolicy(ctx, lab.ID.String()); err != nil {
+		if err1 := s.infrastructure.DeleteNamespace(ctx, lab.ID.String()); err1 != nil {
+			return fmt.Errorf("failed to delete namespace in apply network policy: [%w]", err1)
+		}
+		if err1 := s.infrastructure.DeleteNetwork(ctx, lab.ID.String()); err1 != nil {
+			return fmt.Errorf("failed to delete network in apply network policy: [%w]", err1)
+		}
+		if err1 := s.ipaManager.ReleaseChildCIDR(ctx, lab.CIDRManager.GetCIDR()); err1 != nil {
+			return fmt.Errorf("failed to release child cidr in apply network policy: [%w]", err1)
+		}
+		return fmt.Errorf("failed to apply network policy: [%w]", err)
+	}
+
+	singleIP, err := lab.CIDRManager.AcquireSingleIP(ctx)
+	if err != nil {
+		if err1 := s.infrastructure.DeleteNamespace(ctx, lab.ID.String()); err1 != nil {
+			return fmt.Errorf("failed to delete namespace in acquire single ip: [%w]", err1)
+		}
+		if err1 := s.infrastructure.DeleteNetwork(ctx, lab.ID.String()); err1 != nil {
+			return fmt.Errorf("failed to delete network in acquire single ip: [%w]", err1)
+		}
+		if err1 := s.ipaManager.ReleaseChildCIDR(ctx, lab.CIDRManager.GetCIDR()); err1 != nil {
+			return fmt.Errorf("failed to release child cidr in acquire single ip: [%w]", err1)
+		}
+		return fmt.Errorf("failed to acquire single ip: [%w]", err)
+	}
+
+	if err = s.service.CreateDNSServer(ctx, lab.ID.String(), singleIP); err != nil {
+		if err1 := s.infrastructure.DeleteNamespace(ctx, lab.ID.String()); err1 != nil {
+			return fmt.Errorf("failed to delete namespace in acquire single ip: [%w]", err1)
+		}
+		if err1 := s.infrastructure.DeleteNetwork(ctx, lab.ID.String()); err1 != nil {
+			return fmt.Errorf("failed to delete network in acquire single ip: [%w]", err1)
+		}
+		if err1 := s.ipaManager.ReleaseChildCIDR(ctx, lab.CIDRManager.GetCIDR()); err1 != nil {
+			return fmt.Errorf("failed to release child cidr in acquire single ip: [%w]", err1)
+		}
+		return fmt.Errorf("failed to create dns server: [%w]", err)
+	}
+
+	return nil
 }
 
 func (s *LabService) DeleteLab(ctx context.Context, labID string) error {
@@ -178,6 +312,12 @@ func (s *LabService) DeleteLab(ctx context.Context, labID string) error {
 	if err = s.ipaManager.ReleaseChildCIDR(ctx, lab.CIDRManager.GetCIDR()); err != nil {
 		return fmt.Errorf("failed to release child cidr: [%w]", err)
 	}
+
+	// delete lab from db
+	if _, err = s.repository.DeleteLaboratory(ctx, lab.ID); err != nil {
+		return fmt.Errorf("failed to delete lab: [%w]", err)
+	}
+
 	return nil
 }
 
