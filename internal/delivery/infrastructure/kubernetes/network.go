@@ -3,6 +3,7 @@ package k8s
 import (
 	"context"
 	"github.com/cybericebox/agent/internal/config"
+	"github.com/cybericebox/agent/pkg/appError"
 	v3 "github.com/projectcalico/api/pkg/apis/projectcalico/v3"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -15,7 +16,11 @@ func (k *Kubernetes) ApplyNetwork(ctx context.Context, name, cidr string, blockS
 }
 
 func (k *Kubernetes) DeleteNetwork(ctx context.Context, name string) error {
-	return k.calicoClient.ProjectcalicoV3().IPPools().Delete(ctx, name, metaV1.DeleteOptions{})
+	if err := k.calicoClient.ProjectcalicoV3().IPPools().Delete(ctx, name, metaV1.DeleteOptions{}); err != nil {
+		return appError.ErrKubernetes.WithError(err).WithMessage("Failed to delete network").Err()
+	}
+
+	return nil
 }
 
 func (k *Kubernetes) networkExists(ctx context.Context, name string) bool {
@@ -28,13 +33,13 @@ func (k *Kubernetes) networkExists(ctx context.Context, name string) bool {
 func (k *Kubernetes) GetNetworkCIDR(ctx context.Context, name string) (string, error) {
 	get, err := k.calicoClient.ProjectcalicoV3().IPPools().Get(ctx, name, metaV1.GetOptions{})
 	if err != nil {
-		return "", err
+		return "", appError.ErrKubernetes.WithError(err).WithMessage("Failed to get network CIDR").Err()
 	}
 	return get.Spec.CIDR, nil
 }
 
 func (k *Kubernetes) createNetwork(ctx context.Context, name, cidr string, blockSize int) error {
-	_, err := k.calicoClient.ProjectcalicoV3().IPPools().Create(ctx,
+	if _, err := k.calicoClient.ProjectcalicoV3().IPPools().Create(ctx,
 		&v3.IPPool{
 			TypeMeta: metaV1.TypeMeta{},
 			ObjectMeta: metaV1.ObjectMeta{
@@ -51,6 +56,9 @@ func (k *Kubernetes) createNetwork(ctx context.Context, name, cidr string, block
 				BlockSize:    blockSize,
 				NodeSelector: "!all()",
 			},
-		}, metaV1.CreateOptions{})
-	return err
+		}, metaV1.CreateOptions{}); err != nil {
+		return appError.ErrKubernetes.WithError(err).WithMessage("Failed to create network").Err()
+	}
+
+	return nil
 }

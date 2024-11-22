@@ -6,16 +6,19 @@ import (
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"os"
 )
 
 var MigrationPath string
 
 type (
 	Config struct {
-		Debug      bool             `yaml:"debug" env:"AGENT_DEBUG" env-default:"false" env-description:"Debug mode"`
-		Controller ControllerConfig `yaml:"controller"`
-		Service    ServiceConfig    `yaml:"service"`
-		Repository RepositoryConfig `yaml:"repository"`
+		Environment    string               `yaml:"environment" env:"ENV" env-default:"production" env-description:"Environment"`
+		Controller     ControllerConfig     `yaml:"controller"`
+		Service        ServiceConfig        `yaml:"service"`
+		Repository     RepositoryConfig     `yaml:"repository"`
+		Infrastructure InfrastructureConfig `yaml:"infrastructure"`
+		MaxWorkers     int                  `yaml:"maxWorkers" env:"AGENT_MAX_WORKERS" env-default:"5" env-description:"Max workers for the worker pool"`
 	}
 
 	ControllerConfig struct {
@@ -23,9 +26,10 @@ type (
 	}
 
 	GRPCConfig struct {
-		Endpoint string     `yaml:"host" env:"AGENT_GRPC_LISTEN_ENDPOINT" env-default:"0.0.0.0:5454" env-description:"Listen endpoint of GRPC server"`
-		TLS      TLSConfig  `yaml:"tls"`
-		Auth     AuthConfig `yaml:"auth"`
+		Host string     `yaml:"host" env:"AGENT_GRPC_HOST" env-default:"0.0.0.0" env-description:"Host of GRPC server"`
+		Port string     `yaml:"port" env:"AGENT_GRPC_PORT" env-default:"5454" env-description:"Port of GRPC server"`
+		TLS  TLSConfig  `yaml:"tls"`
+		Auth AuthConfig `yaml:"auth"`
 	}
 
 	TLSConfig struct {
@@ -48,6 +52,15 @@ type (
 		Postgres PostgresConfig `yaml:"postgres"`
 	}
 
+	InfrastructureConfig struct {
+		Kubernetes KubernetesConfig `yaml:"kubernetes"`
+	}
+
+	KubernetesConfig struct {
+		KubeConfigPath string `yaml:"kubeConfigPath" env:"KUBE_CONFIG_PATH" env-default:"" env-description:"Path to kubeconfig file"`
+		PodsCIDR       string // PodsCIDR is equal to LabsCIDR
+	}
+
 	// PostgresConfig is the configuration for the Postgres database
 	PostgresConfig struct {
 		Host     string `yaml:"host" env:"POSTGRES_HOSTNAME" env-description:"Host of Postgres"`
@@ -59,7 +72,7 @@ type (
 	}
 )
 
-func GetConfig() *Config {
+func MustGetConfig() *Config {
 	path := flag.String("config", "", "Path to config file")
 	flag.Parse()
 
@@ -83,15 +96,24 @@ func GetConfig() *Config {
 		return nil
 	}
 
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+
+	// set log mode
+	if instance.Environment != Production {
+		//zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	}
+
 	MigrationPath = "migrations"
-	if instance.Debug {
+	if instance.Environment == Local {
 		MigrationPath = "internal/delivery/repository/postgres/migrations"
 	}
 
-	// set log mode
-	if !instance.Debug {
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	}
+	instance.populateForAllConfig()
 
 	return instance
+}
+
+func (c *Config) populateForAllConfig() {
+	c.Infrastructure.Kubernetes.PodsCIDR = c.Service.LabsCIDR
 }

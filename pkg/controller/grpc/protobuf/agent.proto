@@ -7,17 +7,18 @@ service Agent {
   rpc Ping(EmptyRequest) returns (EmptyResponse) {}
 
   // laboratory
+  rpc GetLabs(LabsRequest) returns (GetLabsResponse) {}
   rpc CreateLabs(CreateLabsRequest) returns (CreateLabsResponse) {}
-  rpc DeleteLabs(DeleteLabsRequest) returns (EmptyResponse) {}
-  rpc AddLabChallenges(AddLabChallengesRequest) returns (EmptyResponse) {}
-  rpc DeleteLabsChallenges(DeleteLabsChallengesRequest) returns (EmptyResponse) {}
-
-  rpc GetLabs(GetLabsRequest) returns (GetLabsResponse) {}
+  rpc DeleteLabs(LabsRequest) returns (EmptyResponse) {}
+  rpc StopLabs(LabsRequest) returns (EmptyResponse) {}
+  rpc StartLabs(LabsRequest) returns (EmptyResponse) {}
 
   // challenge
-  rpc StartChallenge(ChallengeRequest) returns (EmptyResponse) {}
-  rpc StopChallenge(ChallengeRequest) returns (EmptyResponse) {}
-  rpc ResetChallenge(ChallengeRequest) returns (EmptyResponse) {}
+  rpc AddLabChallenges(AddLabChallengesRequest) returns (EmptyResponse) {}
+  rpc DeleteLabsChallenges(LabsChallengesRequest) returns (EmptyResponse) {}
+  rpc StartLabsChallenges(LabsChallengesRequest) returns (EmptyResponse) {}
+  rpc StopLabsChallenges(LabsChallengesRequest) returns (EmptyResponse) {}
+  rpc ResetLabsChallenges(LabsChallengesRequest) returns (EmptyResponse) {}
 
 }
 
@@ -29,73 +30,62 @@ message EmptyResponse {}
 // agent
 
 message CreateLabsRequest {
-  uint32 cidrMask = 1;
-  uint32 count = 2;
+  uint32 CIDRMask = 1;
+  uint32 Count = 2;
 }
 
-message GetLabsRequest {
-  repeated string ids = 1;
-}
-
-message DeleteLabsRequest {
-  repeated string ids = 1;
+message LabsRequest {
+  repeated string IDs = 1;
 }
 
 message AddLabChallengesRequest {
-  string labID = 1;
-  repeated Challenge challenges = 2;
+  string LabID = 1;
+  repeated Challenge Challenges = 2;
 }
 
-message DeleteLabsChallengesRequest {
-  repeated string labIDs = 1;
-  repeated string challengeIDs = 2;
+message LabsChallengesRequest {
+  repeated string LabIDs = 1;
+  repeated string ChallengeIDs = 2;
 }
 
 message CreateLabsResponse {
-  repeated string ids = 1;
+  repeated string IDs = 1;
 }
 
 message GetLabsResponse {
-  repeated Lab labs = 1;
+  repeated Lab Labs = 1;
 }
 
 message Lab {
-  string id = 1;
-  string cidr = 2;
+  string ID = 1;
+  string CIDR = 2;
 }
 
 message Challenge {
-  string id = 1;
-  repeated Instance instances = 2;
+  string ID = 1;
+  repeated Instance Instances = 2;
 }
 
 message Instance {
-  string id = 1;
-  string image = 2;
-  Resources resources = 3;
-  repeated EnvVariable envs = 4;
-  repeated DNSRecord records = 5;
+  string ID = 1;
+  string Image = 2;
+  Resources Resources = 3;
+  repeated EnvVariable Envs = 4;
+  repeated DNSRecord Records = 5;
 }
 
 message Resources {
-  string memory = 1;
-  string cpu = 2;
+  string Memory = 1;
+  string CPU = 2;
 }
 
 message EnvVariable {
-  string name = 1;
-  string value = 2;
+  string Name = 1;
+  string Value = 2;
 }
 
 message DNSRecord {
-  string type = 1;
-  string name = 2;
-  string data = 3;
-}
-
-// challenge
-
-message ChallengeRequest {
-  string id = 1;
-  string labID = 2;
+  string Type = 1;
+  string Name = 2;
+  string Data = 3;
 }

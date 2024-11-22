@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"github.com/cybericebox/agent/internal/config"
 	grpcController "github.com/cybericebox/agent/internal/delivery/controller/grpc"
 	"github.com/rs/zerolog/log"
@@ -37,7 +38,7 @@ func NewController(deps Dependencies) *Controller {
 		Service: deps.Service,
 	})
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to setup grpc server")
+		log.Fatal().Err(err).Msg("Failed to setup grpc server")
 	}
 	return &Controller{
 		grpcController: grpcCont,
@@ -47,17 +48,16 @@ func NewController(deps Dependencies) *Controller {
 
 // Start starts the controller
 func (c *Controller) Start() {
-	lis, err := net.Listen("tcp", c.config.GRPC.Endpoint)
+	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%s", c.config.GRPC.Host, c.config.GRPC.Port))
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to listen")
+		log.Fatal().Err(err).Msg("Failed to listen")
 	}
 	go func() {
-
 		if err = c.grpcController.Serve(lis); err != nil {
-			log.Fatal().Err(err).Msg("failed to serve")
+			log.Fatal().Err(err).Msg("Failed to serve")
 		}
 	}()
-	log.Info().Msgf("gRPC server is running at %s...\n", c.config.GRPC.Endpoint)
+	log.Info().Msgf("gRPC server is running at %s...\n", fmt.Sprintf("%s:%s", c.config.GRPC.Host, c.config.GRPC.Port))
 }
 
 // Stop stops the controller

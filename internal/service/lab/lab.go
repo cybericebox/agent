@@ -2,10 +2,10 @@ package lab
 
 import (
 	"context"
-	"fmt"
 	"github.com/cybericebox/agent/internal/delivery/repository/postgres"
 	"github.com/cybericebox/agent/internal/model"
-	"github.com/cybericebox/wireguard/pkg/ipam"
+	"github.com/cybericebox/agent/pkg/appError"
+	"github.com/cybericebox/lib/pkg/ipam"
 	"github.com/gofrs/uuid"
 	"github.com/hashicorp/go-multierror"
 	"net/netip"
@@ -22,6 +22,9 @@ type (
 		DeleteNamespace(ctx context.Context, name string) error
 
 		ApplyNetworkPolicy(ctx context.Context, labID string) error
+
+		ScaleDeployment(ctx context.Context, name, namespace string, scale int32) error
+		GetDeploymentsInNamespaceBySelector(ctx context.Context, namespace string, selector ...string) ([]model.DeploymentStatus, error)
 	}
 
 	Repository interface {
@@ -39,13 +42,16 @@ type (
 	}
 
 	dnsService interface {
-		CreateDNSServer(ctx context.Context, labId, ip string) error
-		RefreshDNSRecords(ctx context.Context, labId string, records []model.DNSRecordConfig, isAddRecords bool) error
+		CreateDNSServer(ctx context.Context, labID, ip string) error
+		RefreshDNSRecords(ctx context.Context, labID string, records []model.DNSRecordConfig, isAddRecords bool) error
 	}
 
 	challengeService interface {
 		CreateChallenge(ctx context.Context, lab *model.Lab, challengeConfig model.ChallengeConfig) ([]model.DNSRecordConfig, error)
 		DeleteChallenge(ctx context.Context, lab *model.Lab, challengeId string) ([]model.DNSRecordConfig, error)
+		StartChallenge(ctx context.Context, labID, challengeID string) (errs error)
+		StopChallenge(ctx context.Context, labID, challengeID string) (errs error)
+		ResetChallenge(ctx context.Context, labID, challengeID string) (errs error)
 	}
 
 	service interface {
@@ -76,7 +82,7 @@ func (s *LabService) RestoreLabsFromState(ctx context.Context) error {
 	// get all the labs in the state
 	labs, err := s.repository.GetLaboratories(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get labs from state: [%w]", err)
+		return appError.ErrPostgres.WithError(err).WithMessage("Failed to get laboratories from state").Err()
 	}
 
 	var errs error
@@ -85,19 +91,19 @@ func (s *LabService) RestoreLabsFromState(ctx context.Context) error {
 	for _, lab := range labs {
 		exists, err := s.infrastructure.NamespaceExists(ctx, lab.ID.String())
 		if err != nil {
-			errs = multierror.Append(errs, fmt.Errorf("failed to check if namespace exists: [%w]", err))
+			errs = multierror.Append(errs, appError.ErrPlatform.WithError(err).WithMessage("Failed to check if namespace exists").WithContext("labID", lab.ID.String()).Err())
 			continue
 		}
 		if !exists {
 			// create the lab in the infrastructure
 			if err = s.CreateSpecificLab(ctx, uint32(lab.Cidr.Bits()), lab.ID, lab.Cidr); err != nil {
-				errs = multierror.Append(errs, fmt.Errorf("failed to create lab in infrastructure: [%w]", err))
+				errs = multierror.Append(errs, appError.ErrPlatform.WithError(err).WithMessage("Failed to create lab in infrastructure").WithContext("labID", lab.ID.String()).Err())
 			}
 		}
 	}
 
 	if errs != nil {
-		return fmt.Errorf("failed to restore labs from state: [%w]", errs)
+		return appError.ErrPlatform.WithError(errs).WithMessage("Failed to restore labs from state").Err()
 	}
 
 	return nil
@@ -106,12 +112,12 @@ func (s *LabService) RestoreLabsFromState(ctx context.Context) error {
 func (s *LabService) GetLab(ctx context.Context, labID string) (*model.Lab, error) {
 	parsedID, err := uuid.FromString(labID)
 	if err != nil {
-		return nil, fmt.Errorf("invalid lab id: [%w]", err)
+		return nil, appError.ErrLab.WithError(err).WithMessage("Failed to parse lab id").WithContext("labID", labID).Err()
 	}
 
 	cidr, err := s.infrastructure.GetNetworkCIDR(ctx, labID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get lab cidr: [%w]", err)
+		return nil, appError.ErrLab.WithError(err).WithMessage("Failed to get lab cidr").WithContext("labID", labID).Err()
 	}
 
 	lab := &model.Lab{
@@ -120,7 +126,7 @@ func (s *LabService) GetLab(ctx context.Context, labID string) (*model.Lab, erro
 
 	lab.CIDRManager, err = s.ipaManager.GetChildCIDR(ctx, cidr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get lab cidr manager: [%w]", err)
+		return nil, appError.ErrLab.WithError(err).WithMessage("Failed to get child cidr").WithContext("labID", labID).Err()
 	}
 
 	return lab, nil
@@ -135,75 +141,75 @@ func (s *LabService) CreateLab(ctx context.Context, subnetMask uint32) (string, 
 
 	lab.CIDRManager, err = s.ipaManager.AcquireChildCIDR(ctx, subnetMask)
 	if err != nil {
-		return "", fmt.Errorf("failed to acquire child cidr: [%w]", err)
+		return "", appError.ErrLab.WithError(err).WithMessage("Failed to acquire child cidr").WithContext("subnetMask", subnetMask).Err()
 	}
 
 	// create network
 	if err = s.infrastructure.ApplyNetwork(ctx, lab.ID.String(), lab.CIDRManager.GetCIDR(), int(subnetMask)); err != nil {
 		if err1 := s.ipaManager.ReleaseChildCIDR(ctx, lab.CIDRManager.GetCIDR()); err1 != nil {
-			return "", fmt.Errorf("failed to release child cidr in apply network: [%w]", err1)
+			return "", appError.ErrLab.WithError(err1).WithMessage("Failed to release child cidr in apply network").Err()
 		}
-		return "", fmt.Errorf("failed to apply network: [%w]", err)
+		return "", appError.ErrLab.WithError(err).WithMessage("Failed to apply network").WithContext("labID", lab.ID.String()).Err()
 	}
 
 	labPool := lab.ID.String()
 	// create namespace
 	if err = s.infrastructure.ApplyNamespace(ctx, lab.ID.String(), &labPool); err != nil {
 		if err1 := s.infrastructure.DeleteNetwork(ctx, lab.ID.String()); err1 != nil {
-			return "", fmt.Errorf("failed to delete network in apply namespace: [%w]", err1)
+			return "", appError.ErrLab.WithError(err1).WithMessage("Failed to delete network in apply namespace").WithContext("labID", lab.ID.String()).Err()
 		}
 		if err1 := s.ipaManager.ReleaseChildCIDR(ctx, lab.CIDRManager.GetCIDR()); err1 != nil {
-			return "", fmt.Errorf("failed to release child cidr in apply namespace: [%w]", err1)
+			return "", appError.ErrLab.WithError(err1).WithMessage("Failed to release child cidr in apply namespace").WithContext("labID", lab.ID.String()).Err()
 		}
-		return "", fmt.Errorf("failed to apply namespace: [%w]", err)
+		return "", appError.ErrLab.WithError(err).WithMessage("Failed to apply namespace").WithContext("labID", lab.ID.String()).Err()
 	}
 
 	// set network policy
 	if err = s.infrastructure.ApplyNetworkPolicy(ctx, lab.ID.String()); err != nil {
 		if err1 := s.infrastructure.DeleteNamespace(ctx, lab.ID.String()); err1 != nil {
-			return "", fmt.Errorf("failed to delete namespace in apply network policy: [%w]", err1)
+			return "", appError.ErrLab.WithError(err1).WithMessage("Failed to delete namespace in apply network policy").WithContext("labID", lab.ID.String()).Err()
 		}
 		if err1 := s.infrastructure.DeleteNetwork(ctx, lab.ID.String()); err1 != nil {
-			return "", fmt.Errorf("failed to delete network in apply network policy: [%w]", err1)
+			return "", appError.ErrLab.WithError(err1).WithMessage("Failed to delete network in apply network policy").WithContext("labID", lab.ID.String()).Err()
 		}
 		if err1 := s.ipaManager.ReleaseChildCIDR(ctx, lab.CIDRManager.GetCIDR()); err1 != nil {
-			return "", fmt.Errorf("failed to release child cidr in apply network policy: [%w]", err1)
+			return "", appError.ErrLab.WithError(err1).WithMessage("Failed to release child cidr in apply network policy").WithContext("labID", lab.ID.String()).Err()
 		}
-		return "", fmt.Errorf("failed to apply network policy: [%w]", err)
+		return "", appError.ErrLab.WithError(err).WithMessage("Failed to apply network policy").WithContext("labID", lab.ID.String()).Err()
 	}
 
 	singleIP, err := lab.CIDRManager.AcquireSingleIP(ctx)
 	if err != nil {
 		if err1 := s.infrastructure.DeleteNamespace(ctx, lab.ID.String()); err1 != nil {
-			return "", fmt.Errorf("failed to delete namespace in acquire single ip: [%w]", err1)
+			return "", appError.ErrLab.WithError(err1).WithMessage("Failed to delete namespace in acquire single ip").WithContext("labID", lab.ID.String()).Err()
 		}
 		if err1 := s.infrastructure.DeleteNetwork(ctx, lab.ID.String()); err1 != nil {
-			return "", fmt.Errorf("failed to delete network in acquire single ip: [%w]", err1)
+			return "", appError.ErrLab.WithError(err1).WithMessage("Failed to delete network in acquire single ip").WithContext("labID", lab.ID.String()).Err()
 		}
 		if err1 := s.ipaManager.ReleaseChildCIDR(ctx, lab.CIDRManager.GetCIDR()); err1 != nil {
-			return "", fmt.Errorf("failed to release child cidr in acquire single ip: [%w]", err1)
+			return "", appError.ErrLab.WithError(err1).WithMessage("Failed to release child cidr in acquire single ip").WithContext("labID", lab.ID.String()).Err()
 		}
-		return "", fmt.Errorf("failed to acquire single ip: [%w]", err)
+		return "", appError.ErrLab.WithError(err).WithMessage("Failed to acquire single ip").WithContext("labID", lab.ID.String()).Err()
 	}
 
 	if err = s.service.CreateDNSServer(ctx, lab.ID.String(), singleIP); err != nil {
 		if err1 := s.infrastructure.DeleteNamespace(ctx, lab.ID.String()); err1 != nil {
-			return "", fmt.Errorf("failed to delete namespace in acquire single ip: [%w]", err1)
+			return "", appError.ErrLab.WithError(err1).WithMessage("Failed to delete namespace in acquire single ip").WithContext("labID", lab.ID.String()).Err()
 		}
 		if err1 := s.infrastructure.DeleteNetwork(ctx, lab.ID.String()); err1 != nil {
-			return "", fmt.Errorf("failed to delete network in acquire single ip: [%w]", err1)
+			return "", appError.ErrLab.WithError(err1).WithMessage("Failed to delete network in acquire single ip").WithContext("labID", lab.ID.String()).Err()
 		}
 		if err1 := s.ipaManager.ReleaseChildCIDR(ctx, lab.CIDRManager.GetCIDR()); err1 != nil {
-			return "", fmt.Errorf("failed to release child cidr in acquire single ip: [%w]", err1)
+			return "", appError.ErrLab.WithError(err1).WithMessage("Failed to release child cidr in acquire single ip").WithContext("labID", lab.ID.String()).Err()
 		}
-		return "", fmt.Errorf("failed to create dns server: [%w]", err)
+		return "", appError.ErrLab.WithError(err).WithMessage("Failed to create dns server").WithContext("labID", lab.ID.String()).Err()
 	}
 
 	// save lab to db
 
 	cidr, err := netip.ParsePrefix(lab.CIDRManager.GetCIDR())
 	if err != nil {
-		return "", fmt.Errorf("failed to parse cidr: [%w]", err)
+		return "", appError.ErrLab.WithError(err).WithMessage("Failed to parse cidr").WithContext("labID", lab.ID.String()).Err()
 	}
 
 	if err = s.repository.CreateLaboratory(ctx, postgres.CreateLaboratoryParams{
@@ -211,9 +217,9 @@ func (s *LabService) CreateLab(ctx context.Context, subnetMask uint32) (string, 
 		Cidr: cidr,
 	}); err != nil {
 		if err1 := s.DeleteLab(ctx, lab.ID.String()); err1 != nil {
-			return "", fmt.Errorf("failed to delete lab: [%w]", err1)
+			return "", appError.ErrLab.WithError(err1).WithMessage("Failed to delete lab in create lab").WithContext("labID", lab.ID.String()).Err()
 		}
-		return "", fmt.Errorf("failed to create lab: [%w]", err)
+		return "", appError.ErrLab.WithWrappedError(appError.ErrPostgres.WithError(err)).WithMessage("Failed to create lab in db").WithContext("labID", lab.ID.String()).Err()
 	}
 
 	return lab.ID.String(), nil
@@ -228,68 +234,68 @@ func (s *LabService) CreateSpecificLab(ctx context.Context, subnetMask uint32, l
 
 	lab.CIDRManager, err = s.ipaManager.GetChildCIDR(ctx, cidr.String())
 	if err != nil {
-		return fmt.Errorf("failed to get child cidr: [%w]", err)
+		return appError.ErrLab.WithError(err).WithMessage("Failed to get child cidr").WithContext("labID", labID.String()).Err()
 	}
 
 	// create network
 	if err = s.infrastructure.ApplyNetwork(ctx, lab.ID.String(), lab.CIDRManager.GetCIDR(), int(subnetMask)); err != nil {
 		if err1 := s.ipaManager.ReleaseChildCIDR(ctx, lab.CIDRManager.GetCIDR()); err1 != nil {
-			return fmt.Errorf("failed to release child cidr in apply network: [%w]", err1)
+			return appError.ErrLab.WithError(err1).WithMessage("Failed to release child cidr in apply network").WithContext("labID", lab.ID.String()).Err()
 		}
-		return fmt.Errorf("failed to apply network: [%w]", err)
+		return appError.ErrLab.WithError(err).WithMessage("Failed to apply network").WithContext("labID", lab.ID.String()).Err()
 	}
 
 	labPool := lab.ID.String()
 	// create namespace
 	if err = s.infrastructure.ApplyNamespace(ctx, lab.ID.String(), &labPool); err != nil {
 		if err1 := s.infrastructure.DeleteNetwork(ctx, lab.ID.String()); err1 != nil {
-			return fmt.Errorf("failed to delete network in apply namespace: [%w]", err1)
+			return appError.ErrLab.WithError(err1).WithMessage("Failed to delete network in apply namespace").WithContext("labID", lab.ID.String()).Err()
 		}
 		if err1 := s.ipaManager.ReleaseChildCIDR(ctx, lab.CIDRManager.GetCIDR()); err1 != nil {
-			return fmt.Errorf("failed to release child cidr in apply namespace: [%w]", err1)
+			return appError.ErrLab.WithError(err1).WithMessage("Failed to release child cidr in apply namespace").WithContext("labID", lab.ID.String()).Err()
 		}
-		return fmt.Errorf("failed to apply namespace: [%w]", err)
+		return appError.ErrLab.WithError(err).WithMessage("Failed to apply namespace").WithContext("labID", lab.ID.String()).Err()
 	}
 
 	// set network policy
 	if err = s.infrastructure.ApplyNetworkPolicy(ctx, lab.ID.String()); err != nil {
 		if err1 := s.infrastructure.DeleteNamespace(ctx, lab.ID.String()); err1 != nil {
-			return fmt.Errorf("failed to delete namespace in apply network policy: [%w]", err1)
+			return appError.ErrLab.WithError(err1).WithMessage("Failed to delete namespace in apply network policy").WithContext("labID", lab.ID.String()).Err()
 		}
 		if err1 := s.infrastructure.DeleteNetwork(ctx, lab.ID.String()); err1 != nil {
-			return fmt.Errorf("failed to delete network in apply network policy: [%w]", err1)
+			return appError.ErrLab.WithError(err1).WithMessage("Failed to delete network in apply network policy").WithContext("labID", lab.ID.String()).Err()
 		}
 		if err1 := s.ipaManager.ReleaseChildCIDR(ctx, lab.CIDRManager.GetCIDR()); err1 != nil {
-			return fmt.Errorf("failed to release child cidr in apply network policy: [%w]", err1)
+			return appError.ErrLab.WithError(err1).WithMessage("Failed to release child cidr in apply network policy").WithContext("labID", lab.ID.String()).Err()
 		}
-		return fmt.Errorf("failed to apply network policy: [%w]", err)
+		return appError.ErrLab.WithError(err).WithMessage("Failed to apply network policy").WithContext("labID", lab.ID.String()).Err()
 	}
 
-	singleIP, err := lab.CIDRManager.AcquireSingleIP(ctx)
+	singleIP, err := lab.CIDRManager.GetFirstIP()
 	if err != nil {
 		if err1 := s.infrastructure.DeleteNamespace(ctx, lab.ID.String()); err1 != nil {
-			return fmt.Errorf("failed to delete namespace in acquire single ip: [%w]", err1)
+			return appError.ErrLab.WithError(err1).WithMessage("Failed to delete namespace in acquire single ip").WithContext("labID", lab.ID.String()).Err()
 		}
 		if err1 := s.infrastructure.DeleteNetwork(ctx, lab.ID.String()); err1 != nil {
-			return fmt.Errorf("failed to delete network in acquire single ip: [%w]", err1)
+			return appError.ErrLab.WithError(err1).WithMessage("Failed to delete network in acquire single ip").WithContext("labID", lab.ID.String()).Err()
 		}
 		if err1 := s.ipaManager.ReleaseChildCIDR(ctx, lab.CIDRManager.GetCIDR()); err1 != nil {
-			return fmt.Errorf("failed to release child cidr in acquire single ip: [%w]", err1)
+			return appError.ErrLab.WithError(err1).WithMessage("Failed to release child cidr in acquire single ip").WithContext("labID", lab.ID.String()).Err()
 		}
-		return fmt.Errorf("failed to acquire single ip: [%w]", err)
+		return appError.ErrLab.WithError(err).WithMessage("Failed to acquire single ip").WithContext("labID", lab.ID.String()).Err()
 	}
 
 	if err = s.service.CreateDNSServer(ctx, lab.ID.String(), singleIP); err != nil {
 		if err1 := s.infrastructure.DeleteNamespace(ctx, lab.ID.String()); err1 != nil {
-			return fmt.Errorf("failed to delete namespace in acquire single ip: [%w]", err1)
+			return appError.ErrLab.WithError(err1).WithMessage("Failed to delete namespace in acquire single ip").WithContext("labID", lab.ID.String()).Err()
 		}
 		if err1 := s.infrastructure.DeleteNetwork(ctx, lab.ID.String()); err1 != nil {
-			return fmt.Errorf("failed to delete network in acquire single ip: [%w]", err1)
+			return appError.ErrLab.WithError(err1).WithMessage("Failed to delete network in acquire single ip").WithContext("labID", lab.ID.String()).Err()
 		}
 		if err1 := s.ipaManager.ReleaseChildCIDR(ctx, lab.CIDRManager.GetCIDR()); err1 != nil {
-			return fmt.Errorf("failed to release child cidr in acquire single ip: [%w]", err1)
+			return appError.ErrLab.WithError(err1).WithMessage("Failed to release child cidr in acquire single ip").WithContext("labID", lab.ID.String()).Err()
 		}
-		return fmt.Errorf("failed to create dns server: [%w]", err)
+		return appError.ErrLab.WithError(err).WithMessage("Failed to create dns server").WithContext("labID", lab.ID.String()).Err()
 	}
 
 	return nil
@@ -298,41 +304,89 @@ func (s *LabService) CreateSpecificLab(ctx context.Context, subnetMask uint32, l
 func (s *LabService) DeleteLab(ctx context.Context, labID string) error {
 	lab, err := s.GetLab(ctx, labID)
 	if err != nil {
-		return fmt.Errorf("failed to get lab: [%w]", err)
+		return appError.ErrLab.WithError(err).WithMessage("Failed to get lab").WithContext("labID", labID).Err()
 	}
 
 	if err = s.infrastructure.DeleteNamespace(ctx, lab.ID.String()); err != nil {
-		return fmt.Errorf("failed to delete namespace: [%w]", err)
+		return appError.ErrLab.WithError(err).WithMessage("Failed to delete namespace").WithContext("labID", labID).Err()
 	}
 
 	if err = s.infrastructure.DeleteNetwork(ctx, lab.ID.String()); err != nil {
-		return fmt.Errorf("failed to delete network: [%w]", err)
+		return appError.ErrLab.WithError(err).WithMessage("Failed to delete network").WithContext("labID", labID).Err()
 	}
 
 	if err = s.ipaManager.ReleaseChildCIDR(ctx, lab.CIDRManager.GetCIDR()); err != nil {
-		return fmt.Errorf("failed to release child cidr: [%w]", err)
+		return appError.ErrLab.WithError(err).WithMessage("Failed to release child cidr").WithContext("labID", labID).Err()
 	}
 
 	// delete lab from db
 	if _, err = s.repository.DeleteLaboratory(ctx, lab.ID); err != nil {
-		return fmt.Errorf("failed to delete lab: [%w]", err)
+		return appError.ErrLab.WithWrappedError(appError.ErrPostgres.WithError(err)).WithMessage("Failed to delete lab from db").WithContext("labID", labID).Err()
 	}
 
 	return nil
 }
 
+func (s *LabService) StartLab(ctx context.Context, labID string) error {
+	// get all deployments in the lab
+	deployments, err := s.infrastructure.GetDeploymentsInNamespaceBySelector(ctx, labID)
+	if err != nil {
+		return appError.ErrLab.WithError(err).WithMessage("Failed to get deployments in namespace by selector").WithContext("labID", labID).Err()
+	}
+
+	var errs error
+
+	// scale all deployments to 1
+	for _, deployment := range deployments {
+		if err = s.infrastructure.ScaleDeployment(ctx, deployment.Name, labID, 1); err != nil {
+			errs = multierror.Append(errs, appError.ErrLab.WithError(err).WithMessage("Failed to scale deployment").WithContext("labID", labID).WithContext("deploymentName", deployment.Name).Err())
+		}
+	}
+
+	if errs != nil {
+		return appError.ErrLab.WithError(errs).WithMessage("Failed to start lab").WithContext("labID", labID).Err()
+	}
+
+	return nil
+}
+
+func (s *LabService) StopLab(ctx context.Context, labID string) error {
+	// get all deployments in the lab
+	deployments, err := s.infrastructure.GetDeploymentsInNamespaceBySelector(ctx, labID)
+	if err != nil {
+		return appError.ErrLab.WithError(err).WithMessage("Failed to get deployments in namespace by selector").WithContext("labID", labID).Err()
+	}
+
+	var errs error
+
+	// scale all deployments to 0
+	for _, deployment := range deployments {
+		if err = s.infrastructure.ScaleDeployment(ctx, deployment.Name, labID, 0); err != nil {
+			errs = multierror.Append(errs, appError.ErrLab.WithError(err).WithMessage("Failed to scale deployment").WithContext("labID", labID).WithContext("deploymentName", deployment.Name).Err())
+		}
+	}
+
+	if errs != nil {
+		return appError.ErrLab.WithError(errs).WithMessage("Failed to stop lab").WithContext("labID", labID).Err()
+	}
+
+	return nil
+}
+
+// challenge methods
+
 func (s *LabService) AddLabChallenges(ctx context.Context, labID string, challengeConfigs []model.ChallengeConfig) (errs error) {
 	// get lab by cidr
 	lab, err := s.GetLab(ctx, labID)
 	if err != nil {
-		return fmt.Errorf("failed to get lab: [%w]", err)
+		return appError.ErrLab.WithError(err).WithMessage("Failed to get lab").WithContext("labID", labID).Err()
 	}
 
 	labRecords := make([]model.DNSRecordConfig, 0)
 	for _, challengeConfig := range challengeConfigs {
 		records, err := s.service.CreateChallenge(ctx, lab, challengeConfig)
 		if err != nil {
-			errs = multierror.Append(errs, fmt.Errorf("failed to create challenge: [%w]", err))
+			errs = multierror.Append(errs, appError.ErrLab.WithError(err).WithMessage("Failed to create challenge").WithContext("labID", labID).WithContext("challengeID", challengeConfig.ID).Err())
 			continue
 		}
 
@@ -340,30 +394,72 @@ func (s *LabService) AddLabChallenges(ctx context.Context, labID string, challen
 	}
 
 	if err = s.service.RefreshDNSRecords(ctx, lab.ID.String(), labRecords, true); err != nil {
-		errs = multierror.Append(errs, fmt.Errorf("failed to refresh DNS records: [%w]", err))
+		errs = multierror.Append(errs, appError.ErrLab.WithError(err).WithMessage("Failed to refresh DNS records").WithContext("labID", labID).Err())
 	}
 	return errs
 }
 
-func (s *LabService) DeleteLabChallenges(ctx context.Context, labID string, challengeIds []string) (errs error) {
+func (s *LabService) DeleteLabChallenges(ctx context.Context, labID string, challengeIDs []string) (errs error) {
 	lab, err := s.GetLab(ctx, labID)
 	if err != nil {
-		return fmt.Errorf("failed to get lab: [%w]", err)
+		return appError.ErrLab.WithError(err).WithMessage("Failed to get lab").WithContext("labID", labID).Err()
 	}
 
 	labRecords := make([]model.DNSRecordConfig, 0)
-	for _, challengeId := range challengeIds {
+	for _, challengeId := range challengeIDs {
 		records, err := s.service.DeleteChallenge(ctx, lab, challengeId)
 		if err != nil {
-			errs = multierror.Append(errs, fmt.Errorf("failed to delete challenge: [%w]", err))
+			errs = multierror.Append(errs, appError.ErrLab.WithError(err).WithMessage("Failed to delete challenge").WithContext("labID", labID).WithContext("challengeID", challengeId).Err())
 		}
 
 		labRecords = append(labRecords, records...)
 	}
 
 	if err = s.service.RefreshDNSRecords(ctx, lab.ID.String(), labRecords, false); err != nil {
-		errs = multierror.Append(errs, fmt.Errorf("failed to refresh DNS records: [%w]", err))
+		errs = multierror.Append(errs, appError.ErrLab.WithError(err).WithMessage("Failed to refresh DNS records").WithContext("labID", labID).Err())
 	}
 
 	return errs
+}
+
+func (s *LabService) StartLabChallenges(ctx context.Context, labID string, challengeIDs []string) (errs error) {
+	for _, challengeID := range challengeIDs {
+		if err := s.service.StartChallenge(ctx, labID, challengeID); err != nil {
+			errs = multierror.Append(errs, appError.ErrLab.WithError(err).WithMessage("Failed to start challenge").WithContext("labID", labID).WithContext("challengeID", challengeID).Err())
+		}
+	}
+
+	if errs != nil {
+		return appError.ErrLab.WithError(errs).WithMessage("Failed to start lab challenges").WithContext("labID", labID).Err()
+	}
+
+	return nil
+}
+
+func (s *LabService) StopLabChallenges(ctx context.Context, labID string, challengeIDs []string) (errs error) {
+	for _, challengeID := range challengeIDs {
+		if err := s.service.StopChallenge(ctx, labID, challengeID); err != nil {
+			errs = multierror.Append(errs, appError.ErrLab.WithError(err).WithMessage("Failed to stop challenge").WithContext("labID", labID).WithContext("challengeID", challengeID).Err())
+		}
+	}
+
+	if errs != nil {
+		return appError.ErrLab.WithError(errs).WithMessage("Failed to stop lab challenges").WithContext("labID", labID).Err()
+	}
+
+	return nil
+}
+
+func (s *LabService) ResetLabChallenges(ctx context.Context, labID string, challengeIDs []string) (errs error) {
+	for _, challengeID := range challengeIDs {
+		if err := s.service.ResetChallenge(ctx, labID, challengeID); err != nil {
+			errs = multierror.Append(errs, appError.ErrLab.WithError(err).WithMessage("Failed to reset challenge").WithContext("labID", labID).WithContext("challengeID", challengeID).Err())
+		}
+	}
+
+	if errs != nil {
+		return appError.ErrLab.WithError(errs).WithMessage("Failed to reset lab challenges").WithContext("labID", labID).Err()
+	}
+
+	return nil
 }

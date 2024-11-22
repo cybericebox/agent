@@ -2,8 +2,7 @@ package client
 
 import (
 	"context"
-	"errors"
-	"fmt"
+	"github.com/cybericebox/agent/pkg/appError"
 	"github.com/cybericebox/agent/pkg/controller/grpc/protobuf"
 	"github.com/golang-jwt/jwt"
 	"github.com/rs/zerolog/log"
@@ -11,7 +10,6 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
-	"strings"
 )
 
 const (
@@ -20,32 +18,40 @@ const (
 	AuthKey            = "authKey"
 )
 
-var (
-	UnreachableDBErr = errors.New("database seems to be unreachable")
-	UnauthorizedErr  = errors.New("you seem to not be logged in")
+type (
+	Credentials struct {
+		Token    string
+		Insecure bool
+	}
+
+	Config struct {
+		Endpoint string
+		Auth     Auth
+		TLS      TLS
+	}
+
+	Auth struct {
+		AuthKey string
+		SignKey string
+	}
+
+	TLS struct {
+		Enabled  bool
+		CertFile string
+		CertKey  string
+		CaFile   string
+	}
+
+	AgentClient interface {
+		Close() error
+		protobuf.AgentClient
+	}
+
+	agentClient struct {
+		protobuf.AgentClient
+		connection *grpc.ClientConn
+	}
 )
-
-type Credentials struct {
-	Token    string
-	Insecure bool
-}
-type Config struct {
-	Endpoint string
-	Auth     Auth
-	TLS      TLS
-}
-
-type Auth struct {
-	AuthKey string
-	SignKey string
-}
-
-type TLS struct {
-	Enabled  bool
-	CertFile string
-	CertKey  string
-	CaFile   string
-}
 
 func (c Credentials) GetRequestMetadata(context.Context, ...string) (map[string]string, error) {
 	return map[string]string{
@@ -62,7 +68,7 @@ func getCredentials(conf TLS) (credentials.TransportCredentials, error) {
 	if conf.Enabled {
 		creds, err := credentials.NewServerTLSFromFile(conf.CertFile, conf.CertKey)
 		if err != nil {
-			return nil, err
+			return nil, appError.ErrGRPC.WithError(err).WithMessage("Failed to create server credentials").Err()
 		}
 		return creds, nil
 	} else {
@@ -76,19 +82,17 @@ func translateRPCErr(err error) error {
 		msg := st.Message()
 		switch {
 		case UnauthorizedErrMsg == msg:
-			return UnauthorizedErr
+			return appError.ErrGRPCUnauthenticated.WithError(err).Err()
 
 		case NoTokenErrMsg == msg:
-			return UnauthorizedErr
+			return appError.ErrGRPCUnauthenticated.WithError(err).Err()
 
-		case strings.Contains(msg, "TransientFailure"):
-			return UnreachableDBErr
 		}
 
-		return err
+		return appError.ErrGRPC.WithError(err).WithMessage("Failed to perform RPC").Err()
 	}
 
-	return err
+	return appError.ErrGRPC.WithError(err).WithMessage("Failed to perform RPC").Err()
 }
 
 func constructAuthCredentials(authKey, signKey string) (Credentials, error) {
@@ -103,16 +107,17 @@ func constructAuthCredentials(authKey, signKey string) (Credentials, error) {
 	return authCreds, nil
 }
 
-func NewAgentConnection(config Config) (protobuf.AgentClient, error) {
+// NewAgentConnection creates a new connection to the agent service and returns the client and a function to close the connection
+func NewAgentConnection(config Config) (AgentClient, error) {
 	log.Debug().Str("url", config.Endpoint).Msg("Connecting to agent")
 
 	authCreds, err := constructAuthCredentials(config.Auth.AuthKey, config.Auth.SignKey)
 	if err != nil {
-		return nil, fmt.Errorf("[agent]: Error in constructing auth credentials %v", err)
+		return nil, appError.ErrGRPC.WithError(err).WithMessage("Failed to construct auth credentials").Err()
 	}
 	creds, err := getCredentials(config.TLS)
 	if err != nil {
-		return nil, err
+		return nil, appError.ErrGRPC.WithError(err).WithMessage("Failed to get credentials").Err()
 	}
 	var dialOpts []grpc.DialOption
 	if config.TLS.Enabled {
@@ -134,7 +139,20 @@ func NewAgentConnection(config Config) (protobuf.AgentClient, error) {
 		return nil, translateRPCErr(err)
 	}
 
-	client := protobuf.NewAgentClient(conn)
+	c := protobuf.NewAgentClient(conn)
+
+	client := &agentClient{
+		AgentClient: c,
+		connection:  conn,
+	}
 
 	return client, nil
+}
+
+func (c *agentClient) Close() error {
+	if err := c.connection.Close(); err != nil {
+		return appError.ErrGRPC.WithError(err).WithMessage("Failed to close agent client").Err()
+	}
+
+	return nil
 }

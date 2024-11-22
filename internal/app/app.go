@@ -6,6 +6,7 @@ import (
 	"github.com/cybericebox/agent/internal/delivery/infrastructure"
 	"github.com/cybericebox/agent/internal/delivery/repository"
 	"github.com/cybericebox/agent/internal/service"
+	"github.com/cybericebox/lib/pkg/worker"
 	"github.com/rs/zerolog/log"
 	"os"
 	"os/signal"
@@ -13,9 +14,14 @@ import (
 )
 
 func Run() {
-	cfg := config.GetConfig()
+	cfg := config.MustGetConfig()
 
-	infra := infrastructure.NewInfrastructure(cfg.Service.LabsCIDR)
+	w := worker.NewWorker(cfg.MaxWorkers)
+
+	infra := infrastructure.NewInfrastructure(infrastructure.Dependencies{
+		Config: &cfg.Infrastructure,
+		Worker: w,
+	})
 
 	repo := repository.NewRepository(repository.Dependencies{
 		Config: &cfg.Repository,
@@ -49,11 +55,19 @@ func Run() {
 
 	ctrl.Start()
 
+	log.Info().Msg("Application started")
+
 	// Graceful Shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 
 	<-quit
-
+	// Stop the controller
 	ctrl.Stop()
+	log.Info().Msg("Controller stopped")
+	// Stop repository
+	repo.Close()
+	log.Info().Msg("Repository stopped")
+
+	log.Info().Msg("Application stopped")
 }
