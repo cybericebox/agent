@@ -6,15 +6,19 @@ import (
 	"fmt"
 	"github.com/cybericebox/agent/internal/config"
 	"github.com/cybericebox/agent/internal/model"
-	"github.com/cybericebox/agent/internal/service/helper"
+	"github.com/cybericebox/agent/internal/service/tools"
+	"github.com/cybericebox/agent/pkg/appError"
 	"github.com/hashicorp/go-multierror"
 	"slices"
+	"strconv"
 	"text/template"
+	"time"
 )
 
 const (
 	dnsName       = "dns-server"
 	dnsConfigName = "dns-config"
+	dnsConfigPath = "/dns"
 
 	image = "coredns/coredns:1.11.1"
 
@@ -22,27 +26,33 @@ const (
 	zoneFile = "zonefile"
 
 	coreFileContent = `. {
-    file /zonefile
-    prometheus     # enable metrics
-    errors         # show errors
-    log            # enable query logs
+errors         # show errors
+    file /dns/zonefile {
+	reload 5s	
+}
+
 }
 `
 	zonePrefixContent = `$ORIGIN .
 @   3600 IN SOA sns.dns.icann.org. noc.dns.icann.org. (
-                2017042745 ; serial
+                {{.Serial}} ; serial
                 7200       ; refresh (2 hours)
                 3600       ; retry (1 hour)
                 1209600    ; expire (2 weeks)
                 3600       ; minimum (1 hour)
                 )
 
-{{range .}}{{.Name}} IN {{.Type}} {{.Data}}
+{{range .Records}}{{.Name}} IN {{.Type}} {{.Data}}
 {{end}}
 `
 )
 
 type (
+	zoneConfig struct {
+		Serial  string
+		Records []model.DNSRecordConfig
+	}
+
 	Infrastructure interface {
 		ApplyDeployment(ctx context.Context, config model.ApplyDeploymentConfig) error
 		ResetDeployment(ctx context.Context, name, namespace string) error
@@ -69,14 +79,14 @@ func NewDNSService(infrastructure Infrastructure) *DNSService {
 
 // CreateDNSServer creates a new DNS server for the lab
 func (dns *DNSService) CreateDNSServer(ctx context.Context, labID, ip string) error {
-
+	labDNSErr := appError.ErrLabDNS.WithContext("labID", labID)
 	newDNS := newDNSServer(dns.infrastructure, labID)
 
 	if err := newDNS.setConfig(ctx); err != nil {
-		return err
+		return labDNSErr.WithError(err).WithMessage("Failed to set config").Err()
 	}
 
-	return dns.infrastructure.ApplyDeployment(ctx, model.ApplyDeploymentConfig{
+	if err := dns.infrastructure.ApplyDeployment(ctx, model.ApplyDeploymentConfig{
 		Name:  dnsName,
 		LabID: labID,
 		Image: image,
@@ -95,63 +105,54 @@ func (dns *DNSService) CreateDNSServer(ctx context.Context, labID, ip string) er
 				CPU:    "10m",
 			},
 		},
-		Args: []string{"-conf", fmt.Sprintf("/%s", coreFile)},
+		ReplicaCount: 1,
+		Args:         []string{"-conf", fmt.Sprintf("%s/%s", dnsConfigPath, coreFile)},
 		Volumes: []model.Volume{{
 			Name:          dnsName,
 			ConfigMapName: dnsConfigName,
-			Mounts: []model.Mount{
-				{
-					MountPath: fmt.Sprintf("/%s", coreFile),
-					SubPath:   coreFile,
-				},
-				{
-					MountPath: fmt.Sprintf("/%s", zoneFile),
-					SubPath:   zoneFile,
-				}},
+			MountPath:     dnsConfigPath,
 		}},
-	})
+	}); err != nil {
+		return labDNSErr.WithError(err).WithMessage("Failed to apply deployment").Err()
+	}
+
+	return nil
 }
 
-func (dns *DNSService) RefreshDNSRecords(ctx context.Context, labId string, records []model.DNSRecordConfig, isAddingRecords bool) error {
-	newDNS := newDNSServer(dns.infrastructure, labId)
+func (dns *DNSService) RefreshDNSRecords(ctx context.Context, labID string, records []model.DNSRecordConfig, isAddingRecords bool) error {
+	labDNSErr := appError.ErrLabDNS.WithContext("labID", labID)
+
+	newDNS := newDNSServer(dns.infrastructure, labID)
 
 	if err := newDNS.getRecords(ctx); err != nil {
-		return err
+		return labDNSErr.WithError(err).WithMessage("Failed to get records").Err()
 	}
 
 	if isAddingRecords {
 		if err := newDNS.addRecords(records); err != nil {
-			return err
+			return labDNSErr.WithError(err).WithMessage("Failed to add records").Err()
 		}
 	} else {
 		if err := newDNS.deleteRecords(records); err != nil {
-			return err
+			return labDNSErr.WithError(err).WithMessage("Failed to delete records").Err()
 		}
 	}
 
 	if err := newDNS.setConfig(ctx); err != nil {
-		return err
+		return labDNSErr.WithError(err).WithMessage("Failed to set config").Err()
 	}
 
-	return newDNS.reset(ctx)
+	return nil
 }
 
 // newDNSServer creates a new DNS server instance
 
-func newDNSServer(infrastructure Infrastructure, labId string) *DNSServer {
+func newDNSServer(infrastructure Infrastructure, labID string) *DNSServer {
 	return &DNSServer{
-		labID:          labId,
+		labID:          labID,
 		infrastructure: infrastructure,
 		records:        make([]model.DNSRecordConfig, 0),
 	}
-}
-
-func (dns *DNSServer) reset(ctx context.Context) error {
-	if err := dns.infrastructure.ResetDeployment(ctx, dnsName, dns.labID); err != nil {
-		return fmt.Errorf("failed to reset deployment: [%w]", err)
-	}
-
-	return nil
 }
 
 func (dns *DNSServer) generateZoneConfig() (string, error) {
@@ -159,11 +160,15 @@ func (dns *DNSServer) generateZoneConfig() (string, error) {
 
 	t, err := template.New("config").Parse(zonePrefixContent)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse template: [%w]", err)
+		return "", appError.ErrLabDNS.WithError(err).WithContext("labID", dns.labID).WithMessage("Failed to parse template").Err()
 	}
-	err = t.Execute(&tpl, dns.records)
+	err = t.Execute(&tpl, zoneConfig{
+		// serial as time now
+		Serial:  strconv.Itoa(int(time.Now().Unix())),
+		Records: dns.records,
+	})
 	if err != nil {
-		return "", fmt.Errorf("failed to execute template: [%w]", err)
+		return "", appError.ErrLabDNS.WithError(err).WithContext("labID", dns.labID).WithMessage("Failed to execute template").Err()
 	}
 	return tpl.String(), nil
 }
@@ -173,15 +178,15 @@ func (dns *DNSServer) setConfig(ctx context.Context) error {
 	cfg, err := dns.generateZoneConfig()
 
 	if err != nil {
-		return fmt.Errorf("failed to generate zone config: [%w]", err)
+		return appError.ErrLabDNS.WithError(err).WithContext("labID", dns.labID).WithMessage("Failed to generate zone config").Err()
 	}
 
 	if err = dns.infrastructure.ApplyConfigMap(ctx, dnsConfigName, dns.labID, map[string]string{
 		coreFile:                coreFileContent,
 		zoneFile:                cfg,
-		config.RecordsListLabel: helper.RecordsToStr(dns.records),
+		config.RecordsListLabel: tools.RecordsToStr(dns.records),
 	}); err != nil {
-		return fmt.Errorf("failed to apply config map: [%w]", err)
+		return appError.ErrLabDNS.WithError(err).WithContext("labID", dns.labID).WithMessage("Failed to apply config map").Err()
 	}
 
 	return nil
@@ -190,14 +195,14 @@ func (dns *DNSServer) setConfig(ctx context.Context) error {
 func (dns *DNSServer) getRecords(ctx context.Context) error {
 	data, err := dns.infrastructure.GetConfigMapData(ctx, dnsConfigName, dns.labID)
 	if err != nil {
-		return fmt.Errorf("failed to get config map data: [%w]", err)
+		return appError.ErrLabDNS.WithError(err).WithContext("labID", dns.labID).WithMessage("Failed to get config map data").Err()
 	}
 
 	if len(data[config.RecordsListLabel]) == 0 {
 		return nil
 	}
 
-	dns.records = helper.RecordsFromStr(data[config.RecordsListLabel])
+	dns.records = tools.RecordsFromStr(data[config.RecordsListLabel])
 
 	return nil
 }
@@ -207,14 +212,14 @@ func (dns *DNSServer) addRecords(records []model.DNSRecordConfig) error {
 
 	for _, r := range records {
 		if slices.Contains(dns.records, r) {
-			errs = multierror.Append(errs, fmt.Errorf("record for %s IN %s %s already exists", r.Name, r.Type, r.Data))
+			errs = multierror.Append(errs, appError.ErrLabDNS.WithError(errs).WithContext("labID", dns.labID).WithMessage(fmt.Sprintf("record for %s IN %s %s already exists", r.Name, r.Type, r.Data)).Err())
 		} else {
 			dns.records = append(dns.records, r)
 		}
 	}
 
 	if errs != nil {
-		return fmt.Errorf("failed to add records: [%w]", errs)
+		return appError.ErrLabDNS.WithError(errs).WithContext("labID", dns.labID).WithMessage("Failed to add records").Err()
 	}
 
 	return nil
@@ -223,17 +228,35 @@ func (dns *DNSServer) addRecords(records []model.DNSRecordConfig) error {
 func (dns *DNSServer) deleteRecords(records []model.DNSRecordConfig) error {
 	var errs error
 
+	newRecords := make([]model.DNSRecordConfig, 0)
+
+	for _, r := range dns.records {
+		if !recordContains(records, r) {
+			newRecords = append(newRecords, r)
+		}
+	}
+
+	// Check if all records to delete are present
 	for _, r := range records {
-		if slices.Contains(dns.records, r) {
-			errs = multierror.Append(errs, fmt.Errorf("record for %s IN %s %s already exists", r.Name, r.Type, r.Data))
-		} else {
-			dns.records = append(dns.records, r)
+		if !recordContains(records, r) {
+			errs = multierror.Append(errs, appError.ErrLabDNS.WithError(errs).WithContext("labID", dns.labID).WithMessage(fmt.Sprintf("record for %s IN %s %s does not exist", r.Name, r.Type, r.Data)).Err())
 		}
 	}
 
 	if errs != nil {
-		return fmt.Errorf("failed to delete records: [%w]", errs)
+		return appError.ErrLabDNS.WithError(errs).WithContext("labID", dns.labID).WithMessage("Failed to delete records").Err()
 	}
 
+	dns.records = newRecords
+
 	return nil
+}
+
+func recordContains(records []model.DNSRecordConfig, record model.DNSRecordConfig) bool {
+	for _, r := range records {
+		if r.Name == record.Name && r.Type == record.Type {
+			return true
+		}
+	}
+	return false
 }

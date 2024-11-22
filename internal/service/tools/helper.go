@@ -1,4 +1,4 @@
-package helper
+package tools
 
 import (
 	"crypto/sha256"
@@ -25,7 +25,8 @@ func RecordsFromStr(str string) []model.DNSRecordConfig {
 	rData := strings.Split(str, "---")
 	for _, r := range rData {
 		rItem := strings.Split(r, "___")
-		rItem = append(rItem, "", "")
+		// if the recordData is empty, append an empty string to the end
+		rItem = append(rItem, "")
 		records = append(records, model.DNSRecordConfig{
 			Type: rItem[0],
 			Name: rItem[1],

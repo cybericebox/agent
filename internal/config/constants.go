@@ -1,5 +1,12 @@
 package config
 
+// Environments
+const (
+	Local      = "local"
+	Stage      = "stage"
+	Production = "production"
+)
+
 const (
 	PlatformLabel    = "cybericebox"
 	LabIDLabel       = "labID"

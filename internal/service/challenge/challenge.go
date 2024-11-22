@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"github.com/cybericebox/agent/internal/config"
 	"github.com/cybericebox/agent/internal/model"
-	"github.com/cybericebox/agent/internal/service/helper"
+	"github.com/cybericebox/agent/internal/service/tools"
+	"github.com/cybericebox/agent/pkg/appError"
 	"github.com/hashicorp/go-multierror"
 )
 
@@ -37,52 +38,53 @@ func NewChallengeService(deps Dependencies) *ChallengeService {
 func (s *ChallengeService) CreateChallenge(ctx context.Context, lab *model.Lab, challengeConfig model.ChallengeConfig) (records []model.DNSRecordConfig, errs error) {
 	for _, inst := range challengeConfig.Instances {
 		// check if the instance is already deployed
-		ex, err := s.infrastructure.DeploymentExists(ctx, inst.Id, lab.ID.String())
+		ex, err := s.infrastructure.DeploymentExists(ctx, inst.ID, lab.ID.String())
 		if err != nil {
-			errs = multierror.Append(errs, fmt.Errorf("failed to check if deployment exists: [%w]", err))
+			errs = multierror.Append(errs, appError.ErrLabChallenge.WithError(err).WithMessage("Failed to check if deployment exists").WithContext("labID", lab.ID.String()).WithContext("challengeID", challengeConfig.ID).WithContext("instanceID", inst.ID).Err())
 			continue
 		}
 
 		if ex {
-			errs = multierror.Append(errs, fmt.Errorf("instance already exists: [%s]", inst.Id))
+			errs = multierror.Append(errs, appError.ErrLabChallenge.WithMessage("Deployment already exists").WithContext("labID", lab.ID.String()).WithContext("challengeID", challengeConfig.ID).WithContext("instanceID", inst.ID).Err())
 			continue
 		}
 
 		ip, err := lab.CIDRManager.AcquireSingleIP(ctx)
 		if err != nil {
-			errs = multierror.Append(errs, fmt.Errorf("failed to acquire ip for instance: [%w]", err))
+			errs = multierror.Append(errs, appError.ErrLabChallenge.WithError(err).WithMessage("Failed to acquire ip for instance").WithContext("labID", lab.ID.String()).WithContext("challengeID", challengeConfig.ID).WithContext("instanceID", inst.ID).Err())
 			continue
 		}
 
 		dns, err := lab.CIDRManager.GetFirstIP()
 		if err != nil {
-			errs = multierror.Append(errs, fmt.Errorf("failed to get dns for instance: [%w]", err))
+			errs = multierror.Append(errs, appError.ErrLabChallenge.WithError(err).WithMessage("Failed to get dns ip for instance").WithContext("labID", lab.ID.String()).WithContext("challengeID", challengeConfig.ID).WithContext("instanceID", inst.ID).Err())
 			if err = lab.CIDRManager.ReleaseSingleIP(ctx, ip); err != nil {
-				errs = multierror.Append(errs, fmt.Errorf("failed to release ip for instance in dns: [%w]", err))
+				errs = multierror.Append(errs, appError.ErrLabChallenge.WithError(err).WithMessage("Failed to release ip for instance in get dns: [%w]").WithContext("labID", lab.ID.String()).WithContext("challengeID", challengeConfig.ID).WithContext("instanceID", inst.ID).Err())
 			}
 			continue
 		}
 
 		if err = s.infrastructure.ApplyDeployment(ctx, model.ApplyDeploymentConfig{
-			Name:  inst.Id,
+			Name:  inst.ID,
 			LabID: lab.ID.String(),
 			Labels: map[string]string{
 				config.PlatformLabel:    config.Challenge,
 				config.LabIDLabel:       lab.ID.String(),
-				config.ChallengeIDLabel: challengeConfig.Id,
-				config.InstanceIDLabel:  inst.Id,
-				config.RecordsListLabel: helper.RecordsToStr(inst.Records),
+				config.ChallengeIDLabel: challengeConfig.ID,
+				config.InstanceIDLabel:  inst.ID,
+				config.RecordsListLabel: tools.RecordsToStr(inst.Records),
 			},
 			Image:        inst.Image,
 			IP:           ip,
 			DNS:          dns,
+			ReplicaCount: 1,
 			UsePublicDNS: true,
 			Resources:    inst.Resources,
 			Envs:         inst.Envs,
 		}); err != nil {
-			errs = multierror.Append(errs, fmt.Errorf("failed to apply deployment for instance: [%w]", err))
+			errs = multierror.Append(errs, appError.ErrLabChallenge.WithError(err).WithMessage("Failed to apply deployment").WithContext("labID", lab.ID.String()).WithContext("challengeID", challengeConfig.ID).WithContext("instanceID", inst.ID).Err())
 			if err = lab.CIDRManager.ReleaseSingleIP(ctx, ip); err != nil {
-				errs = multierror.Append(errs, fmt.Errorf("failed to release ip for instance in apply: [%w]", err))
+				errs = multierror.Append(errs, appError.ErrLabChallenge.WithError(err).WithMessage("Failed to release ip for instance in apply deployment: [%w]").WithContext("labID", lab.ID.String()).WithContext("challengeID", challengeConfig.ID).WithContext("instanceID", inst.ID).Err())
 			}
 			continue
 		}
@@ -104,21 +106,21 @@ func (s *ChallengeService) DeleteChallenge(ctx context.Context, lab *model.Lab, 
 		fmt.Sprintf("%s=%s", config.ChallengeIDLabel, challengeID),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get instances in namespace by selector: [%w]", err)
+		return nil, appError.ErrLabChallenge.WithError(err).WithMessage("Failed to get instances in namespace by selector").WithContext("labID", lab.ID.String()).WithContext("challengeID", challengeID).Err()
 	}
 
 	records = make([]model.DNSRecordConfig, 0)
 
 	for _, dp := range dps {
 		if err = s.infrastructure.DeleteDeployment(ctx, dp.Name, lab.ID.String()); err != nil {
-			errs = multierror.Append(errs, fmt.Errorf("failed to delete deployment: [%w]", err))
+			errs = multierror.Append(errs, appError.ErrLabChallenge.WithError(err).WithMessage("Failed to delete deployment").WithContext("labID", lab.ID.String()).WithContext("challengeID", challengeID).Err())
 		}
 
 		if err = lab.CIDRManager.ReleaseSingleIP(ctx, dp.IP); err != nil {
-			errs = multierror.Append(errs, fmt.Errorf("failed to release ip for instance in delete: [%w]", err))
+			errs = multierror.Append(errs, appError.ErrLabChallenge.WithError(err).WithMessage("Failed to release ip for instance").WithContext("labID", lab.ID.String()).WithContext("challengeID", challengeID).Err())
 		}
 
-		records = append(records, helper.RecordsFromStr(dp.Labels[config.RecordsListLabel])...)
+		records = append(records, tools.RecordsFromStr(dp.Labels[config.RecordsListLabel])...)
 	}
 
 	return
@@ -131,12 +133,12 @@ func (s *ChallengeService) StartChallenge(ctx context.Context, labID, challengeI
 		fmt.Sprintf("%s=%s", config.ChallengeIDLabel, challengeID),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to get instances in namespace by selector: [%w]", err)
+		return appError.ErrLabChallenge.WithError(err).WithMessage("Failed to get instances in namespace by selector").WithContext("labID", labID).WithContext("challengeID", challengeID).Err()
 	}
 
 	for _, dp := range dps {
 		if err = s.infrastructure.ScaleDeployment(ctx, dp.Name, labID, 1); err != nil {
-			errs = multierror.Append(errs, fmt.Errorf("failed to upscale deployment: [%w]", err))
+			errs = multierror.Append(errs, appError.ErrLabChallenge.WithError(err).WithMessage("Failed to upscale deployment").WithContext("labID", labID).WithContext("challengeID", challengeID).Err())
 		}
 	}
 	return
@@ -149,12 +151,12 @@ func (s *ChallengeService) StopChallenge(ctx context.Context, labID, challengeID
 		fmt.Sprintf("%s=%s", config.ChallengeIDLabel, challengeID),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to get instances in namespace by selector: [%w]", err)
+		return appError.ErrLabChallenge.WithError(err).WithMessage("Failed to get instances in namespace by selector").WithContext("labID", labID).WithContext("challengeID", challengeID).Err()
 	}
 
 	for _, dp := range dps {
 		if err = s.infrastructure.ScaleDeployment(ctx, dp.Name, labID, 0); err != nil {
-			errs = multierror.Append(errs, fmt.Errorf("failed to downscale deployment: [%w]", err))
+			errs = multierror.Append(errs, appError.ErrLabChallenge.WithError(err).WithMessage("Failed to downscale deployment").WithContext("labID", labID).WithContext("challengeID", challengeID).Err())
 		}
 	}
 	return
@@ -167,12 +169,12 @@ func (s *ChallengeService) ResetChallenge(ctx context.Context, labID, challengeI
 		fmt.Sprintf("%s=%s", config.ChallengeIDLabel, challengeID),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to get instances in namespace by selector: [%w]", err)
+		return appError.ErrLabChallenge.WithError(err).WithMessage("Failed to get instances in namespace by selector").WithContext("labID", labID).WithContext("challengeID", challengeID).Err()
 	}
 
 	for _, dp := range dps {
 		if err = s.infrastructure.ResetDeployment(ctx, dp.Name, labID); err != nil {
-			errs = multierror.Append(errs, fmt.Errorf("failed to reset deployment: [%w]", err))
+			errs = multierror.Append(errs, appError.ErrLabChallenge.WithError(err).WithMessage("Failed to reset deployment").WithContext("labID", labID).WithContext("challengeID", challengeID).Err())
 		}
 	}
 	return

@@ -2,12 +2,12 @@ package model
 
 type (
 	ChallengeConfig struct {
-		Id        string
+		ID        string
 		Instances []InstanceConfig
 	}
 
 	InstanceConfig struct {
-		Id        string
+		ID        string
 		Image     string
 		Resources ResourcesConfig
 		Envs      []EnvConfig

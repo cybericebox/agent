@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"context"
+	"github.com/cybericebox/agent/pkg/appError"
 	apinetworkingv1 "k8s.io/api/networking/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
@@ -28,11 +29,15 @@ func (k *Kubernetes) ApplyNetworkPolicy(ctx context.Context, labID string) error
 					WithTo(networkingv1.NetworkPolicyPeer().WithIPBlock(networkingv1.IPBlock().WithCIDR("0.0.0.0/0").WithExcept(k.podCIDR))),
 			),
 	}, metaV1.ApplyOptions{FieldManager: "application/apply-patch"}); err != nil {
-		return err
+		return appError.ErrKubernetes.WithError(err).WithMessage("Failed to apply network policy").Err()
 	}
 	return nil
 }
 
 func (k *Kubernetes) DeleteNetworkPolicy(ctx context.Context, labID string) error {
-	return k.kubeClient.NetworkingV1().NetworkPolicies(labID).Delete(ctx, "default", metaV1.DeleteOptions{})
+	if err := k.kubeClient.NetworkingV1().NetworkPolicies(labID).Delete(ctx, "default", metaV1.DeleteOptions{}); err != nil {
+		return appError.ErrKubernetes.WithError(err).WithMessage("Failed to delete network policy").Err()
+	}
+
+	return nil
 }

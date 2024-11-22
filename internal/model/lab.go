@@ -1,7 +1,7 @@
 package model
 
 import (
-	"github.com/cybericebox/wireguard/pkg/ipam"
+	"github.com/cybericebox/lib/pkg/ipam"
 	"github.com/gofrs/uuid"
 )
 
