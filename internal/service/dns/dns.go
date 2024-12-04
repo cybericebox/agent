@@ -20,17 +20,17 @@ const (
 	dnsConfigName = "dns-config"
 	dnsConfigPath = "/dns"
 
-	image = "coredns/coredns:1.11.1"
+	image = "cybericebox/coredns:1.12.0"
 
 	coreFile = "Corefile"
 	zoneFile = "zonefile"
 
 	coreFileContent = `. {
 errors         # show errors
-    file /dns/zonefile {
+file /dns/zonefile {
 	reload 5s	
 }
-
+alternate original NXDOMAIN . 8.8.8.8 1.1.1.1
 }
 `
 	zonePrefixContent = `$ORIGIN .
