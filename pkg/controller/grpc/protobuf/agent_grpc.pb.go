@@ -20,14 +20,16 @@ const _ = grpc.SupportPackageIsVersion8
 
 const (
 	Agent_Ping_FullMethodName                 = "/agent.Agent/Ping"
+	Agent_GetLabs_FullMethodName              = "/agent.Agent/GetLabs"
 	Agent_CreateLabs_FullMethodName           = "/agent.Agent/CreateLabs"
 	Agent_DeleteLabs_FullMethodName           = "/agent.Agent/DeleteLabs"
+	Agent_StopLabs_FullMethodName             = "/agent.Agent/StopLabs"
+	Agent_StartLabs_FullMethodName            = "/agent.Agent/StartLabs"
 	Agent_AddLabChallenges_FullMethodName     = "/agent.Agent/AddLabChallenges"
 	Agent_DeleteLabsChallenges_FullMethodName = "/agent.Agent/DeleteLabsChallenges"
-	Agent_GetLabs_FullMethodName              = "/agent.Agent/GetLabs"
-	Agent_StartChallenge_FullMethodName       = "/agent.Agent/StartChallenge"
-	Agent_StopChallenge_FullMethodName        = "/agent.Agent/StopChallenge"
-	Agent_ResetChallenge_FullMethodName       = "/agent.Agent/ResetChallenge"
+	Agent_StartLabsChallenges_FullMethodName  = "/agent.Agent/StartLabsChallenges"
+	Agent_StopLabsChallenges_FullMethodName   = "/agent.Agent/StopLabsChallenges"
+	Agent_ResetLabsChallenges_FullMethodName  = "/agent.Agent/ResetLabsChallenges"
 )
 
 // AgentClient is the client API for Agent service.
@@ -37,15 +39,17 @@ type AgentClient interface {
 	// metrics
 	Ping(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
 	// laboratory
+	GetLabs(ctx context.Context, in *LabsRequest, opts ...grpc.CallOption) (*GetLabsResponse, error)
 	CreateLabs(ctx context.Context, in *CreateLabsRequest, opts ...grpc.CallOption) (*CreateLabsResponse, error)
-	DeleteLabs(ctx context.Context, in *DeleteLabsRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
-	AddLabChallenges(ctx context.Context, in *AddLabChallengesRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
-	DeleteLabsChallenges(ctx context.Context, in *DeleteLabsChallengesRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
-	GetLabs(ctx context.Context, in *GetLabsRequest, opts ...grpc.CallOption) (*GetLabsResponse, error)
+	DeleteLabs(ctx context.Context, in *LabsRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
+	StopLabs(ctx context.Context, in *LabsRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
+	StartLabs(ctx context.Context, in *LabsRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
 	// challenge
-	StartChallenge(ctx context.Context, in *ChallengeRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
-	StopChallenge(ctx context.Context, in *ChallengeRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
-	ResetChallenge(ctx context.Context, in *ChallengeRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
+	AddLabChallenges(ctx context.Context, in *AddLabChallengesRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
+	DeleteLabsChallenges(ctx context.Context, in *LabsChallengesRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
+	StartLabsChallenges(ctx context.Context, in *LabsChallengesRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
+	StopLabsChallenges(ctx context.Context, in *LabsChallengesRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
+	ResetLabsChallenges(ctx context.Context, in *LabsChallengesRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
 }
 
 type agentClient struct {
@@ -66,6 +70,16 @@ func (c *agentClient) Ping(ctx context.Context, in *EmptyRequest, opts ...grpc.C
 	return out, nil
 }
 
+func (c *agentClient) GetLabs(ctx context.Context, in *LabsRequest, opts ...grpc.CallOption) (*GetLabsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetLabsResponse)
+	err := c.cc.Invoke(ctx, Agent_GetLabs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *agentClient) CreateLabs(ctx context.Context, in *CreateLabsRequest, opts ...grpc.CallOption) (*CreateLabsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateLabsResponse)
@@ -76,10 +90,30 @@ func (c *agentClient) CreateLabs(ctx context.Context, in *CreateLabsRequest, opt
 	return out, nil
 }
 
-func (c *agentClient) DeleteLabs(ctx context.Context, in *DeleteLabsRequest, opts ...grpc.CallOption) (*EmptyResponse, error) {
+func (c *agentClient) DeleteLabs(ctx context.Context, in *LabsRequest, opts ...grpc.CallOption) (*EmptyResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(EmptyResponse)
 	err := c.cc.Invoke(ctx, Agent_DeleteLabs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *agentClient) StopLabs(ctx context.Context, in *LabsRequest, opts ...grpc.CallOption) (*EmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EmptyResponse)
+	err := c.cc.Invoke(ctx, Agent_StopLabs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *agentClient) StartLabs(ctx context.Context, in *LabsRequest, opts ...grpc.CallOption) (*EmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EmptyResponse)
+	err := c.cc.Invoke(ctx, Agent_StartLabs_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +130,7 @@ func (c *agentClient) AddLabChallenges(ctx context.Context, in *AddLabChallenges
 	return out, nil
 }
 
-func (c *agentClient) DeleteLabsChallenges(ctx context.Context, in *DeleteLabsChallengesRequest, opts ...grpc.CallOption) (*EmptyResponse, error) {
+func (c *agentClient) DeleteLabsChallenges(ctx context.Context, in *LabsChallengesRequest, opts ...grpc.CallOption) (*EmptyResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(EmptyResponse)
 	err := c.cc.Invoke(ctx, Agent_DeleteLabsChallenges_FullMethodName, in, out, cOpts...)
@@ -106,40 +140,30 @@ func (c *agentClient) DeleteLabsChallenges(ctx context.Context, in *DeleteLabsCh
 	return out, nil
 }
 
-func (c *agentClient) GetLabs(ctx context.Context, in *GetLabsRequest, opts ...grpc.CallOption) (*GetLabsResponse, error) {
+func (c *agentClient) StartLabsChallenges(ctx context.Context, in *LabsChallengesRequest, opts ...grpc.CallOption) (*EmptyResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetLabsResponse)
-	err := c.cc.Invoke(ctx, Agent_GetLabs_FullMethodName, in, out, cOpts...)
+	out := new(EmptyResponse)
+	err := c.cc.Invoke(ctx, Agent_StartLabsChallenges_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *agentClient) StartChallenge(ctx context.Context, in *ChallengeRequest, opts ...grpc.CallOption) (*EmptyResponse, error) {
+func (c *agentClient) StopLabsChallenges(ctx context.Context, in *LabsChallengesRequest, opts ...grpc.CallOption) (*EmptyResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(EmptyResponse)
-	err := c.cc.Invoke(ctx, Agent_StartChallenge_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, Agent_StopLabsChallenges_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *agentClient) StopChallenge(ctx context.Context, in *ChallengeRequest, opts ...grpc.CallOption) (*EmptyResponse, error) {
+func (c *agentClient) ResetLabsChallenges(ctx context.Context, in *LabsChallengesRequest, opts ...grpc.CallOption) (*EmptyResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(EmptyResponse)
-	err := c.cc.Invoke(ctx, Agent_StopChallenge_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *agentClient) ResetChallenge(ctx context.Context, in *ChallengeRequest, opts ...grpc.CallOption) (*EmptyResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(EmptyResponse)
-	err := c.cc.Invoke(ctx, Agent_ResetChallenge_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, Agent_ResetLabsChallenges_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -153,15 +177,17 @@ type AgentServer interface {
 	// metrics
 	Ping(context.Context, *EmptyRequest) (*EmptyResponse, error)
 	// laboratory
+	GetLabs(context.Context, *LabsRequest) (*GetLabsResponse, error)
 	CreateLabs(context.Context, *CreateLabsRequest) (*CreateLabsResponse, error)
-	DeleteLabs(context.Context, *DeleteLabsRequest) (*EmptyResponse, error)
-	AddLabChallenges(context.Context, *AddLabChallengesRequest) (*EmptyResponse, error)
-	DeleteLabsChallenges(context.Context, *DeleteLabsChallengesRequest) (*EmptyResponse, error)
-	GetLabs(context.Context, *GetLabsRequest) (*GetLabsResponse, error)
+	DeleteLabs(context.Context, *LabsRequest) (*EmptyResponse, error)
+	StopLabs(context.Context, *LabsRequest) (*EmptyResponse, error)
+	StartLabs(context.Context, *LabsRequest) (*EmptyResponse, error)
 	// challenge
-	StartChallenge(context.Context, *ChallengeRequest) (*EmptyResponse, error)
-	StopChallenge(context.Context, *ChallengeRequest) (*EmptyResponse, error)
-	ResetChallenge(context.Context, *ChallengeRequest) (*EmptyResponse, error)
+	AddLabChallenges(context.Context, *AddLabChallengesRequest) (*EmptyResponse, error)
+	DeleteLabsChallenges(context.Context, *LabsChallengesRequest) (*EmptyResponse, error)
+	StartLabsChallenges(context.Context, *LabsChallengesRequest) (*EmptyResponse, error)
+	StopLabsChallenges(context.Context, *LabsChallengesRequest) (*EmptyResponse, error)
+	ResetLabsChallenges(context.Context, *LabsChallengesRequest) (*EmptyResponse, error)
 	mustEmbedUnimplementedAgentServer()
 }
 
@@ -172,29 +198,35 @@ type UnimplementedAgentServer struct {
 func (UnimplementedAgentServer) Ping(context.Context, *EmptyRequest) (*EmptyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
+func (UnimplementedAgentServer) GetLabs(context.Context, *LabsRequest) (*GetLabsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLabs not implemented")
+}
 func (UnimplementedAgentServer) CreateLabs(context.Context, *CreateLabsRequest) (*CreateLabsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateLabs not implemented")
 }
-func (UnimplementedAgentServer) DeleteLabs(context.Context, *DeleteLabsRequest) (*EmptyResponse, error) {
+func (UnimplementedAgentServer) DeleteLabs(context.Context, *LabsRequest) (*EmptyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteLabs not implemented")
+}
+func (UnimplementedAgentServer) StopLabs(context.Context, *LabsRequest) (*EmptyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StopLabs not implemented")
+}
+func (UnimplementedAgentServer) StartLabs(context.Context, *LabsRequest) (*EmptyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StartLabs not implemented")
 }
 func (UnimplementedAgentServer) AddLabChallenges(context.Context, *AddLabChallengesRequest) (*EmptyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddLabChallenges not implemented")
 }
-func (UnimplementedAgentServer) DeleteLabsChallenges(context.Context, *DeleteLabsChallengesRequest) (*EmptyResponse, error) {
+func (UnimplementedAgentServer) DeleteLabsChallenges(context.Context, *LabsChallengesRequest) (*EmptyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteLabsChallenges not implemented")
 }
-func (UnimplementedAgentServer) GetLabs(context.Context, *GetLabsRequest) (*GetLabsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetLabs not implemented")
+func (UnimplementedAgentServer) StartLabsChallenges(context.Context, *LabsChallengesRequest) (*EmptyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StartLabsChallenges not implemented")
 }
-func (UnimplementedAgentServer) StartChallenge(context.Context, *ChallengeRequest) (*EmptyResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method StartChallenge not implemented")
+func (UnimplementedAgentServer) StopLabsChallenges(context.Context, *LabsChallengesRequest) (*EmptyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StopLabsChallenges not implemented")
 }
-func (UnimplementedAgentServer) StopChallenge(context.Context, *ChallengeRequest) (*EmptyResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method StopChallenge not implemented")
-}
-func (UnimplementedAgentServer) ResetChallenge(context.Context, *ChallengeRequest) (*EmptyResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ResetChallenge not implemented")
+func (UnimplementedAgentServer) ResetLabsChallenges(context.Context, *LabsChallengesRequest) (*EmptyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ResetLabsChallenges not implemented")
 }
 func (UnimplementedAgentServer) mustEmbedUnimplementedAgentServer() {}
 
@@ -227,6 +259,24 @@ func _Agent_Ping_Handler(srv interface{}, ctx context.Context, dec func(interfac
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Agent_GetLabs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LabsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentServer).GetLabs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Agent_GetLabs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentServer).GetLabs(ctx, req.(*LabsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Agent_CreateLabs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateLabsRequest)
 	if err := dec(in); err != nil {
@@ -246,7 +296,7 @@ func _Agent_CreateLabs_Handler(srv interface{}, ctx context.Context, dec func(in
 }
 
 func _Agent_DeleteLabs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteLabsRequest)
+	in := new(LabsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -258,7 +308,43 @@ func _Agent_DeleteLabs_Handler(srv interface{}, ctx context.Context, dec func(in
 		FullMethod: Agent_DeleteLabs_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AgentServer).DeleteLabs(ctx, req.(*DeleteLabsRequest))
+		return srv.(AgentServer).DeleteLabs(ctx, req.(*LabsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Agent_StopLabs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LabsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentServer).StopLabs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Agent_StopLabs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentServer).StopLabs(ctx, req.(*LabsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Agent_StartLabs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LabsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentServer).StartLabs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Agent_StartLabs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentServer).StartLabs(ctx, req.(*LabsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -282,7 +368,7 @@ func _Agent_AddLabChallenges_Handler(srv interface{}, ctx context.Context, dec f
 }
 
 func _Agent_DeleteLabsChallenges_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteLabsChallengesRequest)
+	in := new(LabsChallengesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -294,79 +380,61 @@ func _Agent_DeleteLabsChallenges_Handler(srv interface{}, ctx context.Context, d
 		FullMethod: Agent_DeleteLabsChallenges_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AgentServer).DeleteLabsChallenges(ctx, req.(*DeleteLabsChallengesRequest))
+		return srv.(AgentServer).DeleteLabsChallenges(ctx, req.(*LabsChallengesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Agent_GetLabs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetLabsRequest)
+func _Agent_StartLabsChallenges_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LabsChallengesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AgentServer).GetLabs(ctx, in)
+		return srv.(AgentServer).StartLabsChallenges(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Agent_GetLabs_FullMethodName,
+		FullMethod: Agent_StartLabsChallenges_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AgentServer).GetLabs(ctx, req.(*GetLabsRequest))
+		return srv.(AgentServer).StartLabsChallenges(ctx, req.(*LabsChallengesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Agent_StartChallenge_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ChallengeRequest)
+func _Agent_StopLabsChallenges_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LabsChallengesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AgentServer).StartChallenge(ctx, in)
+		return srv.(AgentServer).StopLabsChallenges(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Agent_StartChallenge_FullMethodName,
+		FullMethod: Agent_StopLabsChallenges_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AgentServer).StartChallenge(ctx, req.(*ChallengeRequest))
+		return srv.(AgentServer).StopLabsChallenges(ctx, req.(*LabsChallengesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Agent_StopChallenge_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ChallengeRequest)
+func _Agent_ResetLabsChallenges_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LabsChallengesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AgentServer).StopChallenge(ctx, in)
+		return srv.(AgentServer).ResetLabsChallenges(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Agent_StopChallenge_FullMethodName,
+		FullMethod: Agent_ResetLabsChallenges_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AgentServer).StopChallenge(ctx, req.(*ChallengeRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Agent_ResetChallenge_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ChallengeRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AgentServer).ResetChallenge(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Agent_ResetChallenge_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AgentServer).ResetChallenge(ctx, req.(*ChallengeRequest))
+		return srv.(AgentServer).ResetLabsChallenges(ctx, req.(*LabsChallengesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -383,12 +451,24 @@ var Agent_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Agent_Ping_Handler,
 		},
 		{
+			MethodName: "GetLabs",
+			Handler:    _Agent_GetLabs_Handler,
+		},
+		{
 			MethodName: "CreateLabs",
 			Handler:    _Agent_CreateLabs_Handler,
 		},
 		{
 			MethodName: "DeleteLabs",
 			Handler:    _Agent_DeleteLabs_Handler,
+		},
+		{
+			MethodName: "StopLabs",
+			Handler:    _Agent_StopLabs_Handler,
+		},
+		{
+			MethodName: "StartLabs",
+			Handler:    _Agent_StartLabs_Handler,
 		},
 		{
 			MethodName: "AddLabChallenges",
@@ -399,20 +479,16 @@ var Agent_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Agent_DeleteLabsChallenges_Handler,
 		},
 		{
-			MethodName: "GetLabs",
-			Handler:    _Agent_GetLabs_Handler,
+			MethodName: "StartLabsChallenges",
+			Handler:    _Agent_StartLabsChallenges_Handler,
 		},
 		{
-			MethodName: "StartChallenge",
-			Handler:    _Agent_StartChallenge_Handler,
+			MethodName: "StopLabsChallenges",
+			Handler:    _Agent_StopLabsChallenges_Handler,
 		},
 		{
-			MethodName: "StopChallenge",
-			Handler:    _Agent_StopChallenge_Handler,
-		},
-		{
-			MethodName: "ResetChallenge",
-			Handler:    _Agent_ResetChallenge_Handler,
+			MethodName: "ResetLabsChallenges",
+			Handler:    _Agent_ResetLabsChallenges_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
