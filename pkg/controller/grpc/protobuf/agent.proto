@@ -14,7 +14,7 @@ service Agent {
   rpc StartLabs(LabsRequest) returns (EmptyResponse) {}
 
   // challenge
-  rpc AddLabChallenges(AddLabChallengesRequest) returns (EmptyResponse) {}
+  rpc AddLabsChallenges(AddLabsChallengesRequest) returns (EmptyResponse) {}
   rpc DeleteLabsChallenges(LabsChallengesRequest) returns (EmptyResponse) {}
   rpc StartLabsChallenges(LabsChallengesRequest) returns (EmptyResponse) {}
   rpc StopLabsChallenges(LabsChallengesRequest) returns (EmptyResponse) {}
@@ -38,9 +38,10 @@ message LabsRequest {
   repeated string IDs = 1;
 }
 
-message AddLabChallengesRequest {
-  string LabID = 1;
+message AddLabsChallengesRequest {
+  repeated string LabIDs = 1;
   repeated Challenge Challenges = 2;
+  repeated FlagEnvVariable FlagEnvVariables = 3;
 }
 
 message LabsChallengesRequest {
@@ -82,6 +83,14 @@ message Resources {
 message EnvVariable {
   string Name = 1;
   string Value = 2;
+}
+
+message FlagEnvVariable {
+  string LabID = 1;
+  string ChallengeID = 2;
+  string InstanceID = 3;
+  string Name = 4;
+  string Value = 5;
 }
 
 message DNSRecord {
