@@ -17,7 +17,7 @@ type IChallengeService interface {
 	DeleteLabChallenges(ctx context.Context, labID string, challengeIDs []string) error
 }
 
-func (a *Agent) AddLabChallenges(ctx context.Context, request *protobuf.AddLabChallengesRequest) (*protobuf.EmptyResponse, error) {
+func (a *Agent) AddLabsChallenges(ctx context.Context, request *protobuf.AddLabsChallengesRequest) (*protobuf.EmptyResponse, error) {
 	var errs error
 
 	challengesConfigs := make([]model.ChallengeConfig, 0)
@@ -63,9 +63,42 @@ func (a *Agent) AddLabChallenges(ctx context.Context, request *protobuf.AddLabCh
 
 		challengesConfigs = append(challengesConfigs, model.ChallengeConfig{ID: chConfig.GetID(), Instances: instances})
 	}
+	// map[labID]map[challengeID]map[instanceID]model.EnvConfig
+	flagEnvVariables := make(map[string]map[string]map[string]model.EnvConfig)
 
-	if err := a.service.AddLabChallenges(ctx, request.GetLabID(), challengesConfigs); err != nil {
-		errs = multierror.Append(errs, err)
+	for _, flagEnv := range request.GetFlagEnvVariables() {
+		if _, ok := flagEnvVariables[flagEnv.GetLabID()]; !ok {
+			flagEnvVariables[flagEnv.GetLabID()] = make(map[string]map[string]model.EnvConfig)
+		}
+		if _, ok := flagEnvVariables[flagEnv.GetLabID()][flagEnv.GetChallengeID()]; !ok {
+			flagEnvVariables[flagEnv.GetLabID()][flagEnv.GetChallengeID()] = make(map[string]model.EnvConfig)
+		}
+		flagEnvVariables[flagEnv.GetLabID()][flagEnv.GetChallengeID()][flagEnv.GetInstanceID()] = model.EnvConfig{
+			Name:  flagEnv.GetVariable(),
+			Value: flagEnv.GetFlag(),
+		}
+	}
+
+	for _, labID := range request.GetLabIDs() {
+		labChallengesConfigs := make([]model.ChallengeConfig, 0, len(challengesConfigs))
+
+		for _, chConfig := range challengesConfigs {
+			instances := make([]model.InstanceConfig, 0, len(chConfig.Instances))
+
+			for _, inst := range chConfig.Instances {
+				if flagEnv, ok := flagEnvVariables[labID][chConfig.ID][inst.ID]; ok {
+					inst.Envs = append(inst.Envs, flagEnv)
+				}
+
+				instances = append(instances, inst)
+			}
+
+			labChallengesConfigs = append(labChallengesConfigs, model.ChallengeConfig{ID: chConfig.ID, Instances: instances})
+		}
+
+		if err := a.service.AddLabChallenges(ctx, labID, labChallengesConfigs); err != nil {
+			errs = multierror.Append(errs, err)
+		}
 	}
 
 	if errs != nil {
