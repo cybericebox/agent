@@ -20,7 +20,6 @@ func Run() {
 
 	infra := infrastructure.NewInfrastructure(infrastructure.Dependencies{
 		Config: &cfg.Infrastructure,
-		Worker: w,
 	})
 
 	repo := repository.NewRepository(repository.Dependencies{

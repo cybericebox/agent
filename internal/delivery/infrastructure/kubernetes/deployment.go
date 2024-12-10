@@ -6,8 +6,6 @@ import (
 	"github.com/cybericebox/agent/internal/model"
 	"github.com/cybericebox/agent/internal/service/tools"
 	"github.com/cybericebox/agent/pkg/appError"
-	"github.com/cybericebox/lib/pkg/worker"
-	"github.com/rs/zerolog/log"
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	coreV1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -17,7 +15,6 @@ import (
 	v13 "k8s.io/client-go/applyconfigurations/core/v1"
 	v12 "k8s.io/client-go/applyconfigurations/meta/v1"
 	"strings"
-	"time"
 )
 
 const labInstanceIDLabel = "lab-instance-id"
@@ -99,10 +96,6 @@ func (k *Kubernetes) ApplyDeployment(ctx context.Context, cfg model.ApplyDeploym
 		capAdds = nil
 	}
 
-	//if cfg.ReplicaCount == 0 {
-	//	cfg.ReplicaCount = 1
-	//}
-
 	if cfg.ReadinessProbe != nil {
 		container = container.WithReadinessProbe(v13.Probe().
 			WithPeriodSeconds(cfg.ReadinessProbe.PeriodSeconds).
@@ -150,10 +143,6 @@ func (k *Kubernetes) ApplyDeployment(ctx context.Context, cfg model.ApplyDeploym
 							WithVolumeMounts(volumeMounts...))))),
 		metaV1.ApplyOptions{FieldManager: "application/apply-patch"}); err != nil {
 		return appError.ErrKubernetes.WithError(err).WithMessage("Failed to apply deployment").Err()
-	}
-
-	if cfg.ReplicaCount > 0 {
-		k.addScaleDeploymentTask(cfg.Name, cfg.LabID, cfg.ReplicaCount)
 	}
 
 	return nil
@@ -217,24 +206,14 @@ func (k *Kubernetes) ResetDeployment(ctx context.Context, name, labID string) er
 }
 
 func (k *Kubernetes) DeleteDeployment(ctx context.Context, name, labID string) error {
-	k.addScaleDeploymentTask(name, labID, 0, func(c context.Context) error {
-		if err := k.kubeClient.AppsV1().Deployments(labID).Delete(c, name, metaV1.DeleteOptions{}); err != nil {
-			return appError.ErrKubernetes.WithError(err).WithMessage("Failed to delete deployment").Err()
-		}
-
-		return nil
-	})
+	if err := k.kubeClient.AppsV1().Deployments(labID).Delete(ctx, name, metaV1.DeleteOptions{}); err != nil {
+		return appError.ErrKubernetes.WithError(err).WithMessage("Failed to delete deployment").Err()
+	}
 
 	return nil
 }
 
 func (k *Kubernetes) ScaleDeployment(ctx context.Context, name, labID string, scale int32) error {
-	k.addScaleDeploymentTask(name, labID, scale)
-
-	return nil
-}
-
-func (k *Kubernetes) scaleDeployment(ctx context.Context, name, labID string, scale int32) error {
 	if _, err := k.kubeClient.AppsV1().Deployments(labID).UpdateScale(ctx, name, &autoscalingv1.Scale{
 		TypeMeta: metaV1.TypeMeta{
 			Kind:       "Scale",
@@ -252,43 +231,4 @@ func (k *Kubernetes) scaleDeployment(ctx context.Context, name, labID string, sc
 	}
 
 	return nil
-}
-
-func (k *Kubernetes) addScaleDeploymentTask(name, labID string, scale int32, onTaskFinish ...func(ctx context.Context) error) {
-	k.worker.AddTask(worker.NewTask().WithDo(func() error {
-		ctx := context.Background()
-		// scale deployment
-		if err := k.scaleDeployment(ctx, name, labID, scale); err != nil {
-			log.Error().Err(err).Str("Name", name).Str("labID", labID).Int32("Scale", scale).Msg("Failed to scale deployment")
-		}
-
-		// wait for ready
-		for {
-			time.Sleep(2 * time.Second)
-			dp, err := k.kubeClient.AppsV1().Deployments(labID).Get(ctx, name, metaV1.GetOptions{})
-
-			if err != nil {
-				if !errors.IsNotFound(err) {
-					log.Error().Err(err).Str("Name", name).Str("labID", labID).Int32("Scale", scale).Msg("Failed to get deployment status")
-				}
-				continue
-			}
-
-			if scale > 0 && scale == dp.Status.Replicas && dp.Status.ReadyReplicas == dp.Status.Replicas && dp.Status.AvailableReplicas == dp.Status.Replicas {
-				break
-			}
-
-			if scale == 0 && scale == dp.Status.Replicas {
-				break
-			}
-		}
-
-		if len(onTaskFinish) > 0 {
-			if err := onTaskFinish[0](ctx); err != nil {
-				log.Error().Err(err).Str("Name", name).Str("labID", labID).Int32("Scale", scale).Msg("Failed to execute on task finish")
-			}
-		}
-
-		return nil
-	}).Create())
 }
