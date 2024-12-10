@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/cybericebox/agent/internal/config"
 	grpcController "github.com/cybericebox/agent/internal/delivery/controller/grpc"
+	"github.com/cybericebox/lib/pkg/worker"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"net"
@@ -20,7 +21,7 @@ type (
 	// Service is the API for the service layer
 	Service interface {
 
-		// Service is dependencies for the grpc controller
+		// IService is dependencies for the grpc controller
 		grpcController.IService
 	}
 
@@ -28,6 +29,7 @@ type (
 	Dependencies struct {
 		Config  *config.ControllerConfig
 		Service Service
+		Worker  worker.Worker
 	}
 )
 
@@ -36,6 +38,7 @@ func NewController(deps Dependencies) *Controller {
 	grpcCont, err := grpcController.New(grpcController.Dependencies{
 		Config:  &deps.Config.GRPC,
 		Service: deps.Service,
+		Worker:  deps.Worker,
 	})
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to setup grpc server")

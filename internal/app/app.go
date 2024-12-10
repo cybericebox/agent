@@ -16,7 +16,7 @@ import (
 func Run() {
 	cfg := config.MustGetConfig()
 
-	w := worker.NewWorker(cfg.MaxWorkers)
+	w := worker.NewWorker(cfg.Worker.MaxWorkers, cfg.Worker.Throttle)
 
 	infra := infrastructure.NewInfrastructure(infrastructure.Dependencies{
 		Config: &cfg.Infrastructure,
@@ -51,6 +51,7 @@ func Run() {
 	ctrl := controller.NewController(controller.Dependencies{
 		Config:  &cfg.Controller,
 		Service: serv,
+		Worker:  w,
 	})
 
 	ctrl.Start()

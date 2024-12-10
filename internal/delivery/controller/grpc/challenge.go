@@ -4,8 +4,10 @@ import (
 	"context"
 	"github.com/cybericebox/agent/internal/model"
 	"github.com/cybericebox/agent/pkg/controller/grpc/protobuf"
+	"github.com/cybericebox/lib/pkg/worker"
 	"github.com/hashicorp/go-multierror"
 	"github.com/rs/zerolog/log"
+	"sync"
 )
 
 type IChallengeService interface {
@@ -19,6 +21,8 @@ type IChallengeService interface {
 
 func (a *Agent) AddLabsChallenges(ctx context.Context, request *protobuf.AddLabsChallengesRequest) (*protobuf.EmptyResponse, error) {
 	var errs error
+
+	wg := new(sync.WaitGroup)
 
 	challengesConfigs := make([]model.ChallengeConfig, 0)
 
@@ -86,7 +90,8 @@ func (a *Agent) AddLabsChallenges(ctx context.Context, request *protobuf.AddLabs
 			instances := make([]model.InstanceConfig, 0, len(chConfig.Instances))
 
 			for _, inst := range chConfig.Instances {
-				if flagEnv, ok := flagEnvVariables[labID][chConfig.ID][inst.ID]; ok {
+				flagEnv, ok := flagEnvVariables[labID][chConfig.ID][inst.ID]
+				if ok {
 					inst.Envs = append(inst.Envs, flagEnv)
 				}
 
@@ -95,11 +100,21 @@ func (a *Agent) AddLabsChallenges(ctx context.Context, request *protobuf.AddLabs
 
 			labChallengesConfigs = append(labChallengesConfigs, model.ChallengeConfig{ID: chConfig.ID, Instances: instances})
 		}
-
-		if err := a.service.AddLabChallenges(ctx, labID, labChallengesConfigs); err != nil {
-			errs = multierror.Append(errs, err)
-		}
+		wg.Add(1)
+		a.worker.AddTask(worker.NewTask().
+			WithKey(labID, "add_lab_challenges").
+			WithDo(func() error {
+				if err := a.service.AddLabChallenges(ctx, labID, labChallengesConfigs); err != nil {
+					errs = multierror.Append(errs, err)
+					return err
+				}
+				return nil
+			}).WithOnDone(func(_, _ error) {
+			wg.Done()
+		}).Create())
 	}
+
+	wg.Wait()
 
 	if errs != nil {
 		log.Error().Err(errs).Msg("Failed to add lab challenges")
@@ -111,12 +126,24 @@ func (a *Agent) AddLabsChallenges(ctx context.Context, request *protobuf.AddLabs
 
 func (a *Agent) DeleteLabsChallenges(ctx context.Context, request *protobuf.LabsChallengesRequest) (*protobuf.EmptyResponse, error) {
 	var errs error
+	wg := new(sync.WaitGroup)
 
 	for _, labID := range request.GetLabIDs() {
-		if err := a.service.DeleteLabChallenges(ctx, labID, request.GetChallengeIDs()); err != nil {
-			errs = multierror.Append(errs, err)
-		}
+		wg.Add(1)
+		a.worker.AddTask(worker.NewTask().
+			WithKey(labID, "delete_lab_challenges").
+			WithDo(func() error {
+				if err := a.service.DeleteLabChallenges(ctx, labID, request.GetChallengeIDs()); err != nil {
+					errs = multierror.Append(errs, err)
+					return err
+				}
+				return nil
+			}).WithOnDone(func(_, _ error) {
+			wg.Done()
+		}).Create())
 	}
+
+	wg.Wait()
 
 	if errs != nil {
 		log.Error().Err(errs).Msg("Failed to delete lab challenges")
@@ -128,12 +155,24 @@ func (a *Agent) DeleteLabsChallenges(ctx context.Context, request *protobuf.Labs
 
 func (a *Agent) StartLabsChallenges(ctx context.Context, request *protobuf.LabsChallengesRequest) (*protobuf.EmptyResponse, error) {
 	var errs error
+	wg := new(sync.WaitGroup)
 
 	for _, labID := range request.GetLabIDs() {
-		if err := a.service.StartLabChallenges(ctx, labID, request.GetChallengeIDs()); err != nil {
-			errs = multierror.Append(errs, err)
-		}
+		wg.Add(1)
+		a.worker.AddTask(worker.NewTask().
+			WithKey(labID, "start_lab_challenges").
+			WithDo(func() error {
+				if err := a.service.StartLabChallenges(ctx, labID, request.GetChallengeIDs()); err != nil {
+					errs = multierror.Append(errs, err)
+					return err
+				}
+				return nil
+			}).WithOnDone(func(_, _ error) {
+			wg.Done()
+		}).Create())
 	}
+
+	wg.Wait()
 
 	if errs != nil {
 		log.Error().Err(errs).Msg("Failed to start lab challenges")
@@ -145,12 +184,24 @@ func (a *Agent) StartLabsChallenges(ctx context.Context, request *protobuf.LabsC
 
 func (a *Agent) StopLabsChallenges(ctx context.Context, request *protobuf.LabsChallengesRequest) (*protobuf.EmptyResponse, error) {
 	var errs error
+	wg := new(sync.WaitGroup)
 
 	for _, labID := range request.GetLabIDs() {
-		if err := a.service.StopLabChallenges(ctx, labID, request.GetChallengeIDs()); err != nil {
-			errs = multierror.Append(errs, err)
-		}
+		wg.Add(1)
+		a.worker.AddTask(worker.NewTask().
+			WithKey(labID, "stop_lab_challenges").
+			WithDo(func() error {
+				if err := a.service.StopLabChallenges(ctx, labID, request.GetChallengeIDs()); err != nil {
+					errs = multierror.Append(errs, err)
+					return err
+				}
+				return nil
+			}).WithOnDone(func(_, _ error) {
+			wg.Done()
+		}).Create())
 	}
+
+	wg.Wait()
 
 	if errs != nil {
 		log.Error().Err(errs).Msg("Failed to stop lab challenges")
@@ -162,12 +213,24 @@ func (a *Agent) StopLabsChallenges(ctx context.Context, request *protobuf.LabsCh
 
 func (a *Agent) ResetLabsChallenges(ctx context.Context, request *protobuf.LabsChallengesRequest) (*protobuf.EmptyResponse, error) {
 	var errs error
+	wg := new(sync.WaitGroup)
 
 	for _, labID := range request.GetLabIDs() {
-		if err := a.service.ResetLabChallenges(ctx, labID, request.GetChallengeIDs()); err != nil {
-			errs = multierror.Append(errs, err)
-		}
+		wg.Add(1)
+		a.worker.AddTask(worker.NewTask().
+			WithKey(labID, "reset_lab_challenges").
+			WithDo(func() error {
+				if err := a.service.ResetLabChallenges(ctx, labID, request.GetChallengeIDs()); err != nil {
+					errs = multierror.Append(errs, err)
+					return err
+				}
+				return nil
+			}).WithOnDone(func(_, _ error) {
+			wg.Done()
+		}).Create())
 	}
+
+	wg.Wait()
 
 	if errs != nil {
 		log.Error().Err(errs).Msg("Failed to reset lab challenges")

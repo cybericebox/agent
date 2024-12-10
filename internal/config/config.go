@@ -7,6 +7,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"os"
+	"time"
 )
 
 var MigrationPath string
@@ -18,7 +19,12 @@ type (
 		Service        ServiceConfig        `yaml:"service"`
 		Repository     RepositoryConfig     `yaml:"repository"`
 		Infrastructure InfrastructureConfig `yaml:"infrastructure"`
-		MaxWorkers     int                  `yaml:"maxWorkers" env:"AGENT_MAX_WORKERS" env-default:"5" env-description:"Max workers for the worker pool"`
+		Worker         WorkerConfig         `yaml:"worker"`
+	}
+
+	WorkerConfig struct {
+		MaxWorkers int           `yaml:"maxWorkers" env:"AGENT_MAX_WORKERS" env-default:"10" env-description:"Max workers for the worker pool"`
+		Throttle   time.Duration `yaml:"throttle" env:"AGENT_WORKERS_THROTTLE" env-default:"10ms" env-description:"Throttle for the worker pool"`
 	}
 
 	ControllerConfig struct {
@@ -100,7 +106,7 @@ func MustGetConfig() *Config {
 
 	// set log mode
 	if instance.Environment != Production {
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	}
 
