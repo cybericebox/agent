@@ -45,7 +45,6 @@ func (s *ChallengeService) CreateChallenge(ctx context.Context, lab *model.Lab, 
 		}
 
 		if ex {
-			errs = multierror.Append(errs, appError.ErrLabChallenge.WithMessage("Deployment already exists").WithContext("labID", lab.ID.String()).WithContext("challengeID", challengeConfig.ID).WithContext("instanceID", inst.ID).Err())
 			continue
 		}
 
