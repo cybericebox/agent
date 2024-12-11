@@ -20,12 +20,13 @@ const _ = grpc.SupportPackageIsVersion8
 
 const (
 	Agent_Ping_FullMethodName                 = "/agent.Agent/Ping"
+	Agent_Monitoring_FullMethodName           = "/agent.Agent/Monitoring"
 	Agent_GetLabs_FullMethodName              = "/agent.Agent/GetLabs"
 	Agent_CreateLabs_FullMethodName           = "/agent.Agent/CreateLabs"
 	Agent_DeleteLabs_FullMethodName           = "/agent.Agent/DeleteLabs"
 	Agent_StopLabs_FullMethodName             = "/agent.Agent/StopLabs"
 	Agent_StartLabs_FullMethodName            = "/agent.Agent/StartLabs"
-	Agent_AddLabChallenges_FullMethodName     = "/agent.Agent/AddLabChallenges"
+	Agent_AddLabsChallenges_FullMethodName    = "/agent.Agent/AddLabsChallenges"
 	Agent_DeleteLabsChallenges_FullMethodName = "/agent.Agent/DeleteLabsChallenges"
 	Agent_StartLabsChallenges_FullMethodName  = "/agent.Agent/StartLabsChallenges"
 	Agent_StopLabsChallenges_FullMethodName   = "/agent.Agent/StopLabsChallenges"
@@ -38,6 +39,7 @@ const (
 type AgentClient interface {
 	// metrics
 	Ping(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
+	Monitoring(ctx context.Context, opts ...grpc.CallOption) (Agent_MonitoringClient, error)
 	// laboratory
 	GetLabs(ctx context.Context, in *LabsRequest, opts ...grpc.CallOption) (*GetLabsResponse, error)
 	CreateLabs(ctx context.Context, in *CreateLabsRequest, opts ...grpc.CallOption) (*CreateLabsResponse, error)
@@ -45,7 +47,7 @@ type AgentClient interface {
 	StopLabs(ctx context.Context, in *LabsRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
 	StartLabs(ctx context.Context, in *LabsRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
 	// challenge
-	AddLabChallenges(ctx context.Context, in *AddLabChallengesRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
+	AddLabsChallenges(ctx context.Context, in *AddLabsChallengesRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
 	DeleteLabsChallenges(ctx context.Context, in *LabsChallengesRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
 	StartLabsChallenges(ctx context.Context, in *LabsChallengesRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
 	StopLabsChallenges(ctx context.Context, in *LabsChallengesRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
@@ -68,6 +70,38 @@ func (c *agentClient) Ping(ctx context.Context, in *EmptyRequest, opts ...grpc.C
 		return nil, err
 	}
 	return out, nil
+}
+
+func (c *agentClient) Monitoring(ctx context.Context, opts ...grpc.CallOption) (Agent_MonitoringClient, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &Agent_ServiceDesc.Streams[0], Agent_Monitoring_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &agentMonitoringClient{ClientStream: stream}
+	return x, nil
+}
+
+type Agent_MonitoringClient interface {
+	Send(*EmptyRequest) error
+	Recv() (*MonitoringResponse, error)
+	grpc.ClientStream
+}
+
+type agentMonitoringClient struct {
+	grpc.ClientStream
+}
+
+func (x *agentMonitoringClient) Send(m *EmptyRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *agentMonitoringClient) Recv() (*MonitoringResponse, error) {
+	m := new(MonitoringResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (c *agentClient) GetLabs(ctx context.Context, in *LabsRequest, opts ...grpc.CallOption) (*GetLabsResponse, error) {
@@ -120,10 +154,10 @@ func (c *agentClient) StartLabs(ctx context.Context, in *LabsRequest, opts ...gr
 	return out, nil
 }
 
-func (c *agentClient) AddLabChallenges(ctx context.Context, in *AddLabChallengesRequest, opts ...grpc.CallOption) (*EmptyResponse, error) {
+func (c *agentClient) AddLabsChallenges(ctx context.Context, in *AddLabsChallengesRequest, opts ...grpc.CallOption) (*EmptyResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(EmptyResponse)
-	err := c.cc.Invoke(ctx, Agent_AddLabChallenges_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, Agent_AddLabsChallenges_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -176,6 +210,7 @@ func (c *agentClient) ResetLabsChallenges(ctx context.Context, in *LabsChallenge
 type AgentServer interface {
 	// metrics
 	Ping(context.Context, *EmptyRequest) (*EmptyResponse, error)
+	Monitoring(Agent_MonitoringServer) error
 	// laboratory
 	GetLabs(context.Context, *LabsRequest) (*GetLabsResponse, error)
 	CreateLabs(context.Context, *CreateLabsRequest) (*CreateLabsResponse, error)
@@ -183,7 +218,7 @@ type AgentServer interface {
 	StopLabs(context.Context, *LabsRequest) (*EmptyResponse, error)
 	StartLabs(context.Context, *LabsRequest) (*EmptyResponse, error)
 	// challenge
-	AddLabChallenges(context.Context, *AddLabChallengesRequest) (*EmptyResponse, error)
+	AddLabsChallenges(context.Context, *AddLabsChallengesRequest) (*EmptyResponse, error)
 	DeleteLabsChallenges(context.Context, *LabsChallengesRequest) (*EmptyResponse, error)
 	StartLabsChallenges(context.Context, *LabsChallengesRequest) (*EmptyResponse, error)
 	StopLabsChallenges(context.Context, *LabsChallengesRequest) (*EmptyResponse, error)
@@ -197,6 +232,9 @@ type UnimplementedAgentServer struct {
 
 func (UnimplementedAgentServer) Ping(context.Context, *EmptyRequest) (*EmptyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
+}
+func (UnimplementedAgentServer) Monitoring(Agent_MonitoringServer) error {
+	return status.Errorf(codes.Unimplemented, "method Monitoring not implemented")
 }
 func (UnimplementedAgentServer) GetLabs(context.Context, *LabsRequest) (*GetLabsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLabs not implemented")
@@ -213,8 +251,8 @@ func (UnimplementedAgentServer) StopLabs(context.Context, *LabsRequest) (*EmptyR
 func (UnimplementedAgentServer) StartLabs(context.Context, *LabsRequest) (*EmptyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StartLabs not implemented")
 }
-func (UnimplementedAgentServer) AddLabChallenges(context.Context, *AddLabChallengesRequest) (*EmptyResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AddLabChallenges not implemented")
+func (UnimplementedAgentServer) AddLabsChallenges(context.Context, *AddLabsChallengesRequest) (*EmptyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddLabsChallenges not implemented")
 }
 func (UnimplementedAgentServer) DeleteLabsChallenges(context.Context, *LabsChallengesRequest) (*EmptyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteLabsChallenges not implemented")
@@ -257,6 +295,32 @@ func _Agent_Ping_Handler(srv interface{}, ctx context.Context, dec func(interfac
 		return srv.(AgentServer).Ping(ctx, req.(*EmptyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
+}
+
+func _Agent_Monitoring_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(AgentServer).Monitoring(&agentMonitoringServer{ServerStream: stream})
+}
+
+type Agent_MonitoringServer interface {
+	Send(*MonitoringResponse) error
+	Recv() (*EmptyRequest, error)
+	grpc.ServerStream
+}
+
+type agentMonitoringServer struct {
+	grpc.ServerStream
+}
+
+func (x *agentMonitoringServer) Send(m *MonitoringResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *agentMonitoringServer) Recv() (*EmptyRequest, error) {
+	m := new(EmptyRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func _Agent_GetLabs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -349,20 +413,20 @@ func _Agent_StartLabs_Handler(srv interface{}, ctx context.Context, dec func(int
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Agent_AddLabChallenges_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddLabChallengesRequest)
+func _Agent_AddLabsChallenges_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddLabsChallengesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AgentServer).AddLabChallenges(ctx, in)
+		return srv.(AgentServer).AddLabsChallenges(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Agent_AddLabChallenges_FullMethodName,
+		FullMethod: Agent_AddLabsChallenges_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AgentServer).AddLabChallenges(ctx, req.(*AddLabChallengesRequest))
+		return srv.(AgentServer).AddLabsChallenges(ctx, req.(*AddLabsChallengesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -471,8 +535,8 @@ var Agent_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Agent_StartLabs_Handler,
 		},
 		{
-			MethodName: "AddLabChallenges",
-			Handler:    _Agent_AddLabChallenges_Handler,
+			MethodName: "AddLabsChallenges",
+			Handler:    _Agent_AddLabsChallenges_Handler,
 		},
 		{
 			MethodName: "DeleteLabsChallenges",
@@ -491,6 +555,13 @@ var Agent_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Agent_ResetLabsChallenges_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Monitoring",
+			Handler:       _Agent_Monitoring_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "agent.proto",
 }

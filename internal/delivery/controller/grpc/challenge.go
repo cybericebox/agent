@@ -4,22 +4,18 @@ import (
 	"context"
 	"github.com/cybericebox/agent/internal/model"
 	"github.com/cybericebox/agent/pkg/controller/grpc/protobuf"
-	"github.com/hashicorp/go-multierror"
 	"github.com/rs/zerolog/log"
 )
 
-type IChallengeService interface {
-	StartLabChallenges(ctx context.Context, labID string, challengeIDs []string) error
-	StopLabChallenges(ctx context.Context, labID string, challengeIDs []string) error
-	ResetLabChallenges(ctx context.Context, labID string, challengeIDs []string) error
-
-	AddLabChallenges(ctx context.Context, labID string, configs []model.ChallengeConfig) error
-	DeleteLabChallenges(ctx context.Context, labID string, challengeIDs []string) error
+type IChallengeUseCase interface {
+	AddLabsChallenges(ctx context.Context, labIDs []string, configs []model.ChallengeConfig, flagsEnvVars map[string]map[string]map[string]model.EnvConfig) error
+	StartLabsChallenges(ctx context.Context, labIDs, challengeIDs []string) error
+	StopLabsChallenges(ctx context.Context, labIDs, challengeIDs []string) error
+	ResetLabsChallenges(ctx context.Context, labIDs, challengeIDs []string) error
+	DeleteLabsChallenges(ctx context.Context, labIDs, challengeIDs []string) error
 }
 
-func (a *Agent) AddLabChallenges(ctx context.Context, request *protobuf.AddLabChallengesRequest) (*protobuf.EmptyResponse, error) {
-	var errs error
-
+func (a *Agent) AddLabsChallenges(ctx context.Context, request *protobuf.AddLabsChallengesRequest) (*protobuf.EmptyResponse, error) {
 	challengesConfigs := make([]model.ChallengeConfig, 0)
 
 	for _, chConfig := range request.GetChallenges() {
@@ -63,82 +59,61 @@ func (a *Agent) AddLabChallenges(ctx context.Context, request *protobuf.AddLabCh
 
 		challengesConfigs = append(challengesConfigs, model.ChallengeConfig{ID: chConfig.GetID(), Instances: instances})
 	}
+	// map[labID]map[challengeID]map[instanceID]model.EnvConfig
+	flagEnvVariables := make(map[string]map[string]map[string]model.EnvConfig)
 
-	if err := a.service.AddLabChallenges(ctx, request.GetLabID(), challengesConfigs); err != nil {
-		errs = multierror.Append(errs, err)
+	for _, flagEnv := range request.GetFlagEnvVariables() {
+		if _, ok := flagEnvVariables[flagEnv.GetLabID()]; !ok {
+			flagEnvVariables[flagEnv.GetLabID()] = make(map[string]map[string]model.EnvConfig)
+		}
+		if _, ok := flagEnvVariables[flagEnv.GetLabID()][flagEnv.GetChallengeID()]; !ok {
+			flagEnvVariables[flagEnv.GetLabID()][flagEnv.GetChallengeID()] = make(map[string]model.EnvConfig)
+		}
+		flagEnvVariables[flagEnv.GetLabID()][flagEnv.GetChallengeID()][flagEnv.GetInstanceID()] = model.EnvConfig{
+			Name:  flagEnv.GetVariable(),
+			Value: flagEnv.GetFlag(),
+		}
 	}
 
-	if errs != nil {
-		log.Error().Err(errs).Msg("Failed to add lab challenges")
-		return nil, errs
+	if err := a.useCase.AddLabsChallenges(ctx, request.GetLabIDs(), challengesConfigs, flagEnvVariables); err != nil {
+		log.Error().Err(err).Msg("Failed to add lab challenges")
+		return nil, err
 	}
 
 	return &protobuf.EmptyResponse{}, nil
 }
 
 func (a *Agent) DeleteLabsChallenges(ctx context.Context, request *protobuf.LabsChallengesRequest) (*protobuf.EmptyResponse, error) {
-	var errs error
-
-	for _, labID := range request.GetLabIDs() {
-		if err := a.service.DeleteLabChallenges(ctx, labID, request.GetChallengeIDs()); err != nil {
-			errs = multierror.Append(errs, err)
-		}
-	}
-
-	if errs != nil {
-		log.Error().Err(errs).Msg("Failed to delete lab challenges")
-		return nil, errs
+	if err := a.useCase.DeleteLabsChallenges(ctx, request.GetLabIDs(), request.GetChallengeIDs()); err != nil {
+		log.Error().Err(err).Msg("Failed to delete lab challenges")
+		return nil, err
 	}
 
 	return &protobuf.EmptyResponse{}, nil
 }
 
 func (a *Agent) StartLabsChallenges(ctx context.Context, request *protobuf.LabsChallengesRequest) (*protobuf.EmptyResponse, error) {
-	var errs error
-
-	for _, labID := range request.GetLabIDs() {
-		if err := a.service.StartLabChallenges(ctx, labID, request.GetChallengeIDs()); err != nil {
-			errs = multierror.Append(errs, err)
-		}
-	}
-
-	if errs != nil {
-		log.Error().Err(errs).Msg("Failed to start lab challenges")
-		return nil, errs
+	if err := a.useCase.StartLabsChallenges(ctx, request.GetLabIDs(), request.GetChallengeIDs()); err != nil {
+		log.Error().Err(err).Msg("Failed to start lab challenges")
+		return nil, err
 	}
 
 	return &protobuf.EmptyResponse{}, nil
 }
 
 func (a *Agent) StopLabsChallenges(ctx context.Context, request *protobuf.LabsChallengesRequest) (*protobuf.EmptyResponse, error) {
-	var errs error
-
-	for _, labID := range request.GetLabIDs() {
-		if err := a.service.StopLabChallenges(ctx, labID, request.GetChallengeIDs()); err != nil {
-			errs = multierror.Append(errs, err)
-		}
-	}
-
-	if errs != nil {
-		log.Error().Err(errs).Msg("Failed to stop lab challenges")
-		return nil, errs
+	if err := a.useCase.StopLabsChallenges(ctx, request.GetLabIDs(), request.GetChallengeIDs()); err != nil {
+		log.Error().Err(err).Msg("Failed to stop lab challenges")
+		return nil, err
 	}
 
 	return &protobuf.EmptyResponse{}, nil
 }
 
 func (a *Agent) ResetLabsChallenges(ctx context.Context, request *protobuf.LabsChallengesRequest) (*protobuf.EmptyResponse, error) {
-	var errs error
-
-	for _, labID := range request.GetLabIDs() {
-		if err := a.service.ResetLabChallenges(ctx, labID, request.GetChallengeIDs()); err != nil {
-			errs = multierror.Append(errs, err)
-		}
-	}
-
-	if errs != nil {
-		log.Error().Err(errs).Msg("Failed to reset lab challenges")
-		return nil, errs
+	if err := a.useCase.ResetLabsChallenges(ctx, request.GetLabIDs(), request.GetChallengeIDs()); err != nil {
+		log.Error().Err(err).Msg("Failed to reset lab challenges")
+		return nil, err
 	}
 
 	return &protobuf.EmptyResponse{}, nil

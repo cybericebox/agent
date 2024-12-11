@@ -9,15 +9,17 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
+	metricsv "k8s.io/metrics/pkg/client/clientset/versioned"
 	"path/filepath"
 )
 
 type (
 	Kubernetes struct {
-		kubeClient   *kubernetes.Clientset
-		calicoClient *calico.Clientset
-		worker       worker.Worker
-		podCIDR      string
+		kubeClient    *kubernetes.Clientset
+		calicoClient  *calico.Clientset
+		metricsClient *metricsv.Clientset
+		worker        worker.Worker
+		podCIDR       string
 	}
 
 	Dependencies struct {
@@ -52,6 +54,10 @@ func NewKubernetes(deps Dependencies) *Kubernetes {
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create calico client")
 	}
+	k.metricsClient, err = metricsv.NewForConfig(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to create metrics client")
+	}
 
 	return k
 }
@@ -62,4 +68,8 @@ func (k *Kubernetes) GetKubeClient() *kubernetes.Clientset {
 
 func (k *Kubernetes) GetCalicoClient() *calico.Clientset {
 	return k.calicoClient
+}
+
+func (k *Kubernetes) GetMetricsClient() *metricsv.Clientset {
+	return k.metricsClient
 }

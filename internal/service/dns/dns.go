@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/cybericebox/agent/internal/config"
 	"github.com/cybericebox/agent/internal/model"
-	"github.com/cybericebox/agent/internal/service/tools"
+	"github.com/cybericebox/agent/internal/tools"
 	"github.com/cybericebox/agent/pkg/appError"
 	"github.com/hashicorp/go-multierror"
 	"slices"
@@ -53,7 +53,7 @@ type (
 		Records []model.DNSRecordConfig
 	}
 
-	Infrastructure interface {
+	IInfrastructure interface {
 		ApplyDeployment(ctx context.Context, config model.ApplyDeploymentConfig) error
 		ResetDeployment(ctx context.Context, name, namespace string) error
 
@@ -61,17 +61,17 @@ type (
 		GetConfigMapData(ctx context.Context, name, namespace string) (map[string]string, error)
 	}
 	DNSService struct {
-		infrastructure Infrastructure
+		infrastructure IInfrastructure
 	}
 
 	DNSServer struct {
 		labID          string
 		records        []model.DNSRecordConfig
-		infrastructure Infrastructure
+		infrastructure IInfrastructure
 	}
 )
 
-func NewDNSService(infrastructure Infrastructure) *DNSService {
+func NewDNSService(infrastructure IInfrastructure) *DNSService {
 	return &DNSService{
 		infrastructure: infrastructure,
 	}
@@ -97,12 +97,12 @@ func (dns *DNSService) CreateDNSServer(ctx context.Context, labID, ip string) er
 		},
 		Resources: model.ResourcesConfig{
 			Requests: model.ResourceConfig{
-				Memory: "50Mi",
-				CPU:    "5m",
+				Memory: 50 * 1024 * 1024,
+				CPU:    10,
 			},
 			Limit: model.ResourceConfig{
-				Memory: "50Mi",
-				CPU:    "10m",
+				Memory: 50 * 1024 * 1024,
+				CPU:    10,
 			},
 		},
 		ReplicaCount: 1,
@@ -147,7 +147,7 @@ func (dns *DNSService) RefreshDNSRecords(ctx context.Context, labID string, reco
 
 // newDNSServer creates a new DNS server instance
 
-func newDNSServer(infrastructure Infrastructure, labID string) *DNSServer {
+func newDNSServer(infrastructure IInfrastructure, labID string) *DNSServer {
 	return &DNSServer{
 		labID:          labID,
 		infrastructure: infrastructure,

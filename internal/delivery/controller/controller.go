@@ -17,17 +17,17 @@ type (
 		grpcController *grpc.Server
 	}
 
-	// Service is the API for the service layer
-	Service interface {
+	// IUseCase is the API for the service layer
+	IUseCase interface {
 
-		// Service is dependencies for the grpc controller
-		grpcController.IService
+		// IUseCase is dependencies for the grpc controller
+		grpcController.IUseCase
 	}
 
 	// Dependencies for the controller
 	Dependencies struct {
 		Config  *config.ControllerConfig
-		Service Service
+		UseCase IUseCase
 	}
 )
 
@@ -35,7 +35,7 @@ type (
 func NewController(deps Dependencies) *Controller {
 	grpcCont, err := grpcController.New(grpcController.Dependencies{
 		Config:  &deps.Config.GRPC,
-		Service: deps.Service,
+		UseCase: deps.UseCase,
 	})
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to setup grpc server")

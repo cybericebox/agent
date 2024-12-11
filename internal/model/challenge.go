@@ -20,8 +20,8 @@ type (
 	}
 
 	ResourceConfig struct {
-		Memory string
-		CPU    string
+		Memory int64
+		CPU    int64
 	}
 
 	EnvConfig struct {

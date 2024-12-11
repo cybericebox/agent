@@ -31,10 +31,16 @@ type (
 	}
 
 	DeploymentStatus struct {
-		Name     string
-		Labels   map[string]string
-		IP       string
-		Replicas Replicas
+		Name   string
+		Labels map[string]string
+		IP     string
+		Status Status
+		Reason string
+	}
+
+	PodMetrics struct {
+		Labels    map[string]string
+		Resources ResourceConfig
 	}
 
 	Replicas struct {

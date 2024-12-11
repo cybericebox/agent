@@ -4,111 +4,81 @@ import (
 	"context"
 	"github.com/cybericebox/agent/internal/model"
 	"github.com/cybericebox/agent/pkg/controller/grpc/protobuf"
-	"github.com/hashicorp/go-multierror"
 	"github.com/rs/zerolog/log"
 )
 
 type (
-	ILabService interface {
-		CreateLab(ctx context.Context, subnetMask uint32) (string, error)
-		GetLab(ctx context.Context, labID string) (*model.Lab, error)
-		DeleteLab(ctx context.Context, labID string) error
-		StartLab(ctx context.Context, labID string) error
-		StopLab(ctx context.Context, labID string) error
+	ILabUseCase interface {
+		CreateLabs(ctx context.Context, subnetMask uint32, count int) ([]*model.Lab, error)
+		GetLabs(ctx context.Context, labIDs []string) ([]*model.Lab, error)
+		DeleteLabs(ctx context.Context, labIDs []string) error
+		StartLabs(ctx context.Context, labIDs []string) error
+		StopLabs(ctx context.Context, labIDs []string) error
 	}
 )
 
 func (a *Agent) GetLabs(ctx context.Context, request *protobuf.LabsRequest) (*protobuf.GetLabsResponse, error) {
-	var errs error
+	labs, err := a.useCase.GetLabs(ctx, request.GetIDs())
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to get labs")
+		return nil, err
+	}
 
-	labs := make([]*protobuf.Lab, 0, len(request.GetIDs()))
-
-	for _, id := range request.GetIDs() {
-		lab, err := a.service.GetLab(ctx, id)
-		if err != nil {
-			errs = multierror.Append(errs, err)
-			log.Error().Err(err).Msg("Failed to get lab")
-			continue
-		}
-		labs = append(labs, &protobuf.Lab{
+	convLabs := make([]*protobuf.Lab, 0, len(labs))
+	for _, lab := range labs {
+		convLabs = append(convLabs, &protobuf.Lab{
 			ID:   lab.ID.String(),
-			CIDR: lab.CIDRManager.GetCIDR(),
+			CIDR: lab.CIDR.String(),
 		})
 	}
 
-	if errs != nil {
-		log.Error().Err(errs).Msg("Failed to get labs")
-		return nil, errs
-	}
-
 	return &protobuf.GetLabsResponse{
-		Labs: labs,
+		Labs: convLabs,
 	}, nil
 }
 
 func (a *Agent) CreateLabs(ctx context.Context, request *protobuf.CreateLabsRequest) (*protobuf.CreateLabsResponse, error) {
-	labIDs := make([]string, 0, request.GetCount())
-	var errs error
-
-	for i := uint32(0); i < request.GetCount(); i++ {
-		labID, err := a.service.CreateLab(ctx, request.GetCIDRMask())
-		if err != nil {
-			errs = multierror.Append(errs, err)
-			continue
-		}
-		labIDs = append(labIDs, labID)
+	labs, err := a.useCase.CreateLabs(ctx, request.GetCIDRMask(), int(request.GetCount()))
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to create labs")
+		return nil, err
 	}
 
-	if errs != nil {
-		log.Error().Err(errs).Msg("Failed to create labs")
-		return nil, errs
+	convLabs := make([]*protobuf.Lab, 0, len(labs))
+	for _, lab := range labs {
+		convLabs = append(convLabs, &protobuf.Lab{
+			ID:   lab.ID.String(),
+			CIDR: lab.CIDR.String(),
+		})
 	}
 
 	return &protobuf.CreateLabsResponse{
-		IDs: labIDs,
+		Labs: convLabs,
 	}, nil
 }
 
-func (a *Agent) DeleteLabs(ctx context.Context, request *protobuf.LabsRequest) (*protobuf.EmptyResponse, error) {
-	var errs error
-	for _, id := range request.GetIDs() {
-		if err := a.service.DeleteLab(ctx, id); err != nil {
-			errs = multierror.Append(errs, err)
-		}
-	}
-	if errs != nil {
-		log.Error().Err(errs).Msg("Failed to delete labs")
-		return nil, errs
-	}
-
-	return &protobuf.EmptyResponse{}, nil
-}
-
 func (a *Agent) StartLabs(ctx context.Context, request *protobuf.LabsRequest) (*protobuf.EmptyResponse, error) {
-	var errs error
-	for _, id := range request.GetIDs() {
-		if err := a.service.StartLab(ctx, id); err != nil {
-			errs = multierror.Append(errs, err)
-		}
-	}
-	if errs != nil {
-		log.Error().Err(errs).Msg("Failed to start labs")
-		return nil, errs
+	if err := a.useCase.StartLabs(ctx, request.GetIDs()); err != nil {
+		log.Error().Err(err).Msg("Failed to start labs")
+		return nil, err
 	}
 
 	return &protobuf.EmptyResponse{}, nil
 }
 
 func (a *Agent) StopLabs(ctx context.Context, request *protobuf.LabsRequest) (*protobuf.EmptyResponse, error) {
-	var errs error
-	for _, id := range request.GetIDs() {
-		if err := a.service.StopLab(ctx, id); err != nil {
-			errs = multierror.Append(errs, err)
-		}
+	if err := a.useCase.StopLabs(ctx, request.GetIDs()); err != nil {
+		log.Error().Err(err).Msg("Failed to stop labs")
+		return nil, err
 	}
-	if errs != nil {
-		log.Error().Err(errs).Msg("Failed to stop labs")
-		return nil, errs
+
+	return &protobuf.EmptyResponse{}, nil
+}
+
+func (a *Agent) DeleteLabs(ctx context.Context, request *protobuf.LabsRequest) (*protobuf.EmptyResponse, error) {
+	if err := a.useCase.DeleteLabs(ctx, request.GetIDs()); err != nil {
+		log.Error().Err(err).Msg("Failed to delete labs")
+		return nil, err
 	}
 
 	return &protobuf.EmptyResponse{}, nil

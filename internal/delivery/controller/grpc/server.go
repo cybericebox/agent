@@ -18,18 +18,19 @@ type (
 	Agent struct {
 		auth    Authenticator
 		config  *config.GRPCConfig
-		service IService
+		useCase IUseCase
 		protobuf.UnsafeAgentServer
 	}
 
-	IService interface {
-		IChallengeService
-		ILabService
+	IUseCase interface {
+		IChallengeUseCase
+		ILabUseCase
+		IMonitoringUseCase
 	}
 
 	Dependencies struct {
 		Config  *config.GRPCConfig
-		Service IService
+		UseCase IUseCase
 	}
 )
 
@@ -83,7 +84,7 @@ func New(deps Dependencies) (*grpc.Server, error) {
 	gRPCServer := &Agent{
 		auth:    NewAuthenticator(deps.Config.Auth.SignKey, deps.Config.Auth.AuthKey),
 		config:  deps.Config,
-		service: deps.Service,
+		useCase: deps.UseCase,
 	}
 	opts, err := secureConn(&deps.Config.TLS)
 	if err != nil {

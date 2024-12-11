@@ -1,9 +1,9 @@
 create table if not exists laboratories
 (
-    id              uuid not null primary key,
-    cidr            cidr not null,
+    id         uuid        not null primary key,
+    cidr       cidr        not null,
 
-    updated_at      timestamptz,
+    updated_at timestamptz,
 
-    created_at      timestamptz not null default now()
+    created_at timestamptz not null default now()
 );
