@@ -20,7 +20,9 @@ const (
 	dnsConfigName = "dns-config"
 	dnsConfigPath = "/dns"
 
-	image = "cybericebox/coredns:1.12.0"
+	Mb50   = 50 * 1024 * 1024
+	Cpu10m = 10
+	image  = "cybericebox/coredns:1.12.0"
 
 	coreFile = "Corefile"
 	zoneFile = "zonefile"
@@ -97,12 +99,12 @@ func (dns *DNSService) CreateDNSServer(ctx context.Context, labID, ip string) er
 		},
 		Resources: model.ResourcesConfig{
 			Requests: model.ResourceConfig{
-				Memory: 50 * 1024 * 1024,
-				CPU:    10,
+				Memory: Mb50,
+				CPU:    Cpu10m,
 			},
 			Limit: model.ResourceConfig{
-				Memory: 50 * 1024 * 1024,
-				CPU:    10,
+				Memory: Mb50,
+				CPU:    Cpu10m,
 			},
 		},
 		ReplicaCount: 1,
