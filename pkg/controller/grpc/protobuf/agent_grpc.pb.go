@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion8
 
 const (
 	Agent_Ping_FullMethodName                 = "/agent.Agent/Ping"
+	Agent_Monitoring_FullMethodName           = "/agent.Agent/Monitoring"
 	Agent_GetLabs_FullMethodName              = "/agent.Agent/GetLabs"
 	Agent_CreateLabs_FullMethodName           = "/agent.Agent/CreateLabs"
 	Agent_DeleteLabs_FullMethodName           = "/agent.Agent/DeleteLabs"
@@ -38,6 +39,7 @@ const (
 type AgentClient interface {
 	// metrics
 	Ping(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
+	Monitoring(ctx context.Context, opts ...grpc.CallOption) (Agent_MonitoringClient, error)
 	// laboratory
 	GetLabs(ctx context.Context, in *LabsRequest, opts ...grpc.CallOption) (*GetLabsResponse, error)
 	CreateLabs(ctx context.Context, in *CreateLabsRequest, opts ...grpc.CallOption) (*CreateLabsResponse, error)
@@ -68,6 +70,38 @@ func (c *agentClient) Ping(ctx context.Context, in *EmptyRequest, opts ...grpc.C
 		return nil, err
 	}
 	return out, nil
+}
+
+func (c *agentClient) Monitoring(ctx context.Context, opts ...grpc.CallOption) (Agent_MonitoringClient, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &Agent_ServiceDesc.Streams[0], Agent_Monitoring_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &agentMonitoringClient{ClientStream: stream}
+	return x, nil
+}
+
+type Agent_MonitoringClient interface {
+	Send(*EmptyRequest) error
+	Recv() (*MonitoringResponse, error)
+	grpc.ClientStream
+}
+
+type agentMonitoringClient struct {
+	grpc.ClientStream
+}
+
+func (x *agentMonitoringClient) Send(m *EmptyRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *agentMonitoringClient) Recv() (*MonitoringResponse, error) {
+	m := new(MonitoringResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (c *agentClient) GetLabs(ctx context.Context, in *LabsRequest, opts ...grpc.CallOption) (*GetLabsResponse, error) {
@@ -176,6 +210,7 @@ func (c *agentClient) ResetLabsChallenges(ctx context.Context, in *LabsChallenge
 type AgentServer interface {
 	// metrics
 	Ping(context.Context, *EmptyRequest) (*EmptyResponse, error)
+	Monitoring(Agent_MonitoringServer) error
 	// laboratory
 	GetLabs(context.Context, *LabsRequest) (*GetLabsResponse, error)
 	CreateLabs(context.Context, *CreateLabsRequest) (*CreateLabsResponse, error)
@@ -197,6 +232,9 @@ type UnimplementedAgentServer struct {
 
 func (UnimplementedAgentServer) Ping(context.Context, *EmptyRequest) (*EmptyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
+}
+func (UnimplementedAgentServer) Monitoring(Agent_MonitoringServer) error {
+	return status.Errorf(codes.Unimplemented, "method Monitoring not implemented")
 }
 func (UnimplementedAgentServer) GetLabs(context.Context, *LabsRequest) (*GetLabsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLabs not implemented")
@@ -257,6 +295,32 @@ func _Agent_Ping_Handler(srv interface{}, ctx context.Context, dec func(interfac
 		return srv.(AgentServer).Ping(ctx, req.(*EmptyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
+}
+
+func _Agent_Monitoring_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(AgentServer).Monitoring(&agentMonitoringServer{ServerStream: stream})
+}
+
+type Agent_MonitoringServer interface {
+	Send(*MonitoringResponse) error
+	Recv() (*EmptyRequest, error)
+	grpc.ServerStream
+}
+
+type agentMonitoringServer struct {
+	grpc.ServerStream
+}
+
+func (x *agentMonitoringServer) Send(m *MonitoringResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *agentMonitoringServer) Recv() (*EmptyRequest, error) {
+	m := new(EmptyRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func _Agent_GetLabs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -491,6 +555,13 @@ var Agent_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Agent_ResetLabsChallenges_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Monitoring",
+			Handler:       _Agent_Monitoring_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "agent.proto",
 }

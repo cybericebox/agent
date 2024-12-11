@@ -106,7 +106,7 @@ func MustGetConfig() *Config {
 
 	// set log mode
 	if instance.Environment != Production {
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	}
 

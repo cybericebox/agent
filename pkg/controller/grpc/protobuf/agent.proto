@@ -5,6 +5,7 @@ option go_package = "github.com/cybericebox/agent/pkg/controller/grpc/protobuf";
 service Agent {
   // metrics
   rpc Ping(EmptyRequest) returns (EmptyResponse) {}
+  rpc Monitoring(stream EmptyRequest) returns (stream MonitoringResponse) {}
 
   // laboratory
   rpc GetLabs(LabsRequest) returns (GetLabsResponse) {}
@@ -50,16 +51,41 @@ message LabsChallengesRequest {
 }
 
 message CreateLabsResponse {
-  repeated string IDs = 1;
+  repeated Lab Labs = 1;
 }
 
 message GetLabsResponse {
   repeated Lab Labs = 1;
 }
 
+message MonitoringResponse {
+  repeated LabStatus Labs = 1;
+}
+
 message Lab {
   string ID = 1;
   string CIDR = 2;
+}
+
+message LabStatus {
+  string ID = 1;
+  string CIDR = 2;
+  DNSStatus DNS = 3;
+  repeated InstanceStatus Instances = 4;
+}
+
+message DNSStatus {
+  int32 Status = 2;
+  string Reason = 3;
+  Resources Resources = 4;
+}
+
+message InstanceStatus {
+  string ID = 1;
+  string ChallengeID = 2;
+  int32 Status = 3;
+  string Reason = 4;
+  Resources Resources = 5;
 }
 
 message Challenge {
@@ -76,8 +102,8 @@ message Instance {
 }
 
 message Resources {
-  string Memory = 1;
-  string CPU = 2;
+  int64 Memory = 1;
+  int64 CPU = 2;
 }
 
 message EnvVariable {

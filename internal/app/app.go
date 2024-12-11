@@ -6,6 +6,7 @@ import (
 	"github.com/cybericebox/agent/internal/delivery/infrastructure"
 	"github.com/cybericebox/agent/internal/delivery/repository"
 	"github.com/cybericebox/agent/internal/service"
+	"github.com/cybericebox/agent/internal/useCase"
 	"github.com/cybericebox/lib/pkg/worker"
 	"github.com/rs/zerolog/log"
 	"os"
@@ -37,20 +38,24 @@ func Run() {
 	// test if the service is working properly
 	log.Debug().Msg("Testing service")
 	if err := serv.Test(); err != nil {
-		log.Fatal().Err(err).Msg("Service initial test failed")
+		log.Fatal().Err(err).Msg("IUseCase initial test failed")
 	}
 	log.Info().Msg("Service test passed")
 
+	u := useCase.NewUseCase(useCase.Dependencies{
+		Service: serv,
+		Worker:  w,
+	})
+
 	// restore the state of the service
 	log.Debug().Msg("Restoring service state")
-	if err := serv.Restore(); err != nil {
-		log.Fatal().Err(err).Msg("Service state restore failed")
+	if err := u.Restore(); err != nil {
+		log.Fatal().Err(err).Msg("IUseCase state restore failed")
 	}
 
 	ctrl := controller.NewController(controller.Dependencies{
 		Config:  &cfg.Controller,
-		Service: serv,
-		Worker:  w,
+		UseCase: u,
 	})
 
 	ctrl.Start()
@@ -59,7 +64,7 @@ func Run() {
 
 	// Graceful Shutdown
 	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
+	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
 	<-quit
 	// Stop the controller
@@ -67,7 +72,7 @@ func Run() {
 	log.Info().Msg("Controller stopped")
 	// Stop repository
 	repo.Close()
-	log.Info().Msg("Repository stopped")
+	log.Info().Msg("IRepository stopped")
 
 	log.Info().Msg("Application stopped")
 }

@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"github.com/cybericebox/agent/internal/config"
 	"github.com/cybericebox/agent/internal/model"
-	"github.com/cybericebox/agent/internal/service/tools"
+	"github.com/cybericebox/agent/internal/tools"
 	"github.com/cybericebox/agent/pkg/appError"
 	"github.com/hashicorp/go-multierror"
 )
 
 type (
-	Infrastructure interface {
+	IInfrastructure interface {
 		DeploymentExists(ctx context.Context, name, namespace string) (bool, error)
 		ApplyDeployment(ctx context.Context, config model.ApplyDeploymentConfig) error
 		GetDeploymentsInNamespaceBySelector(ctx context.Context, namespace string, selector ...string) ([]model.DeploymentStatus, error)
@@ -21,11 +21,11 @@ type (
 	}
 
 	ChallengeService struct {
-		infrastructure Infrastructure
+		infrastructure IInfrastructure
 	}
 
 	Dependencies struct {
-		Infrastructure Infrastructure
+		Infrastructure IInfrastructure
 	}
 )
 

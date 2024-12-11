@@ -7,7 +7,6 @@ import (
 	"github.com/cybericebox/agent/internal/config"
 	"github.com/cybericebox/agent/pkg/appError"
 	"github.com/cybericebox/agent/pkg/controller/grpc/protobuf"
-	"github.com/cybericebox/lib/pkg/worker"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -19,20 +18,19 @@ type (
 	Agent struct {
 		auth    Authenticator
 		config  *config.GRPCConfig
-		service IService
-		worker  worker.Worker
+		useCase IUseCase
 		protobuf.UnsafeAgentServer
 	}
 
-	IService interface {
-		IChallengeService
-		ILabService
+	IUseCase interface {
+		IChallengeUseCase
+		ILabUseCase
+		IMonitoringUseCase
 	}
 
 	Dependencies struct {
 		Config  *config.GRPCConfig
-		Service IService
-		Worker  worker.Worker
+		UseCase IUseCase
 	}
 )
 
@@ -86,8 +84,7 @@ func New(deps Dependencies) (*grpc.Server, error) {
 	gRPCServer := &Agent{
 		auth:    NewAuthenticator(deps.Config.Auth.SignKey, deps.Config.Auth.AuthKey),
 		config:  deps.Config,
-		service: deps.Service,
-		worker:  deps.Worker,
+		useCase: deps.UseCase,
 	}
 	opts, err := secureConn(&deps.Config.TLS)
 	if err != nil {

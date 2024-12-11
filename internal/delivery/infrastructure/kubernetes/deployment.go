@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/cybericebox/agent/internal/model"
-	"github.com/cybericebox/agent/internal/service/tools"
+	"github.com/cybericebox/agent/internal/tools"
 	"github.com/cybericebox/agent/pkg/appError"
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	coreV1 "k8s.io/api/core/v1"
@@ -49,34 +49,22 @@ func (k *Kubernetes) ApplyDeployment(ctx context.Context, cfg model.ApplyDeploym
 		container = container.WithArgs(cfg.Args...)
 	}
 
-	if (cfg.Resources.Limit.CPU != "" && cfg.Resources.Limit.Memory != "") || (cfg.Resources.Requests.CPU != "" && cfg.Resources.Requests.Memory != "") {
+	if (cfg.Resources.Limit.CPU != 0 && cfg.Resources.Limit.Memory != 0) || (cfg.Resources.Requests.CPU != 0 && cfg.Resources.Requests.Memory != 0) {
 		r := v13.ResourceRequirements()
-		if cfg.Resources.Limit.CPU != "" {
-			cpu, err := resource.ParseQuantity(cfg.Resources.Limit.CPU)
-			if err != nil {
-				return err
-			}
-			memory, err := resource.ParseQuantity(cfg.Resources.Limit.Memory)
-			if err != nil {
-				return err
-			}
+		if cfg.Resources.Limit.CPU != 0 {
+			cpu := resource.NewMilliQuantity(cfg.Resources.Limit.CPU, resource.DecimalExponent)
+			memory := resource.NewQuantity(cfg.Resources.Limit.Memory, resource.BinarySI)
 			r.WithLimits(coreV1.ResourceList{
-				coreV1.ResourceCPU:    cpu,
-				coreV1.ResourceMemory: memory,
+				coreV1.ResourceCPU:    *cpu,
+				coreV1.ResourceMemory: *memory,
 			})
 		}
-		if cfg.Resources.Requests.CPU != "" {
-			cpu, err := resource.ParseQuantity(cfg.Resources.Requests.CPU)
-			if err != nil {
-				return err
-			}
-			memory, err := resource.ParseQuantity(cfg.Resources.Requests.Memory)
-			if err != nil {
-				return err
-			}
+		if cfg.Resources.Requests.CPU != 0 {
+			cpu := resource.NewMilliQuantity(cfg.Resources.Requests.CPU, resource.DecimalExponent)
+			memory := resource.NewQuantity(cfg.Resources.Requests.Memory, resource.BinarySI)
 			r.WithRequests(coreV1.ResourceList{
-				coreV1.ResourceCPU:    cpu,
-				coreV1.ResourceMemory: memory,
+				coreV1.ResourceCPU:    *cpu,
+				coreV1.ResourceMemory: *memory,
 			})
 		}
 		container = container.WithResources(r)
@@ -149,11 +137,7 @@ func (k *Kubernetes) ApplyDeployment(ctx context.Context, cfg model.ApplyDeploym
 }
 
 func (k *Kubernetes) GetDeploymentsInNamespaceBySelector(ctx context.Context, labID string, selector ...string) ([]model.DeploymentStatus, error) {
-	labelSelector := ""
-
-	if len(selector) > 0 {
-		labelSelector = selector[0]
-	}
+	labelSelector := strings.Join(selector, ",")
 
 	dps, err := k.kubeClient.AppsV1().Deployments(labID).List(ctx, metaV1.ListOptions{
 		LabelSelector: labelSelector,
@@ -166,20 +150,33 @@ func (k *Kubernetes) GetDeploymentsInNamespaceBySelector(ctx context.Context, la
 
 	for _, dp := range dps.Items {
 		dpsStatus = append(dpsStatus, model.DeploymentStatus{
-			Name: dp.GetName(),
-			IP:   dp.Spec.Template.Annotations["ip"],
-			Replicas: model.Replicas{
-				Total:       dp.Status.Replicas,
-				Ready:       dp.Status.ReadyReplicas,
-				Available:   dp.Status.AvailableReplicas,
-				Unavailable: dp.Status.UnavailableReplicas,
-				Updated:     dp.Status.UpdatedReplicas,
-			},
+			Name:   dp.GetName(),
+			IP:     dp.Spec.Template.Annotations["ip"],
+			Status: StatusFromReplicas(dp.Status.Replicas, dp.Status.ReadyReplicas, dp.Status.AvailableReplicas, dp.Status.UnavailableReplicas),
 			Labels: dp.GetLabels(),
 		})
 	}
 
 	return dpsStatus, nil
+}
+
+func StatusFromReplicas(total, ready, available, unavailable int32) model.Status {
+	if total > ready || total > available {
+		return model.StatusStarting
+	}
+	if total == ready && available == ready && unavailable == 0 {
+		return model.StatusRunning
+	}
+	if total < ready || total < available {
+		return model.StatusStopping
+	}
+	if total == 0 && ready == 0 && available == 0 && unavailable == 0 {
+		return model.StatusStopped
+	}
+	if total != ready && unavailable > 0 {
+		return model.StatusError
+	}
+	return model.StatusUnknown
 }
 
 func (k *Kubernetes) DeploymentExists(ctx context.Context, name, labID string) (bool, error) {
