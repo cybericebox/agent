@@ -19,8 +19,13 @@ type (
 	}
 )
 
-func (u *UseCase) AddLabsChallenges(ctx context.Context, labIDs []string, challengesConfigs []model.ChallengeConfig, flagEnvVariables map[string]map[string]map[string]model.EnvConfig) error {
+func (u *UseCase) AddLabsChallenges(ctx context.Context, labsGroupID string, labIDs []string, challengesConfigs []model.ChallengeConfig, flagEnvVariables map[string]map[string]map[string]model.EnvConfig) error {
 	var errs error
+
+	labIDs, err := u.getLabIDs(ctx, labsGroupID, labIDs)
+	if err != nil {
+		return appError.ErrPlatform.WithError(err).WithMessage("Failed to get lab IDs").Err()
+	}
 
 	wg := new(sync.WaitGroup)
 
@@ -64,8 +69,14 @@ func (u *UseCase) AddLabsChallenges(ctx context.Context, labIDs []string, challe
 	return nil
 }
 
-func (u *UseCase) StartLabsChallenges(ctx context.Context, labIDs, challengeIDs []string) error {
+func (u *UseCase) StartLabsChallenges(ctx context.Context, labsGroupID string, labIDs, challengeIDs []string) error {
 	var errs error
+
+	labIDs, err := u.getLabIDs(ctx, labsGroupID, labIDs)
+	if err != nil {
+		return appError.ErrPlatform.WithError(err).WithMessage("Failed to get lab IDs").Err()
+	}
+
 	wg := new(sync.WaitGroup)
 
 	for _, labID := range labIDs {
@@ -92,8 +103,14 @@ func (u *UseCase) StartLabsChallenges(ctx context.Context, labIDs, challengeIDs 
 	return nil
 }
 
-func (u *UseCase) StopLabsChallenges(ctx context.Context, labIDs, challengeIDs []string) error {
+func (u *UseCase) StopLabsChallenges(ctx context.Context, labsGroupID string, labIDs, challengeIDs []string) error {
 	var errs error
+
+	labIDs, err := u.getLabIDs(ctx, labsGroupID, labIDs)
+	if err != nil {
+		return appError.ErrPlatform.WithError(err).WithMessage("Failed to get lab IDs").Err()
+	}
+
 	wg := new(sync.WaitGroup)
 
 	for _, labID := range labIDs {
@@ -120,8 +137,14 @@ func (u *UseCase) StopLabsChallenges(ctx context.Context, labIDs, challengeIDs [
 	return nil
 }
 
-func (u *UseCase) ResetLabsChallenges(ctx context.Context, labIDs, challengeIDs []string) error {
+func (u *UseCase) ResetLabsChallenges(ctx context.Context, labsGroupID string, labIDs, challengeIDs []string) error {
 	var errs error
+
+	labIDs, err := u.getLabIDs(ctx, labsGroupID, labIDs)
+	if err != nil {
+		return appError.ErrPlatform.WithError(err).WithMessage("Failed to get lab IDs").Err()
+	}
+
 	wg := new(sync.WaitGroup)
 
 	for _, labID := range labIDs {
@@ -148,8 +171,14 @@ func (u *UseCase) ResetLabsChallenges(ctx context.Context, labIDs, challengeIDs 
 	return nil
 }
 
-func (u *UseCase) DeleteLabsChallenges(ctx context.Context, labIDs, challengeIDs []string) error {
+func (u *UseCase) DeleteLabsChallenges(ctx context.Context, labsGroupID string, labIDs, challengeIDs []string) error {
 	var errs error
+
+	labIDs, err := u.getLabIDs(ctx, labsGroupID, labIDs)
+	if err != nil {
+		return appError.ErrPlatform.WithError(err).WithMessage("Failed to get lab IDs").Err()
+	}
+
 	wg := new(sync.WaitGroup)
 
 	for _, labID := range labIDs {

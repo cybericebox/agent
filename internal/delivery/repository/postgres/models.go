@@ -14,6 +14,7 @@ import (
 
 type Laboratory struct {
 	ID        uuid.UUID          `json:"id"`
+	GroupID   uuid.UUID          `json:"group_id"`
 	Cidr      netip.Prefix       `json:"cidr"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 	CreatedAt time.Time          `json:"created_at"`

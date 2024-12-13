@@ -28,7 +28,7 @@ func (s *Service) testNormal() error {
 	var errs error
 	// try to create a new lab
 	log.Debug().Msg("Creating test lab")
-	labID, err := s.LabService.CreateLab(ctx, 26)
+	labID, err := s.LabService.CreateLab(ctx, 26, "")
 	if err != nil {
 		return appError.ErrPlatform.WithError(err).WithMessage("Failed to create test lab").Err()
 	}
@@ -87,7 +87,7 @@ func (s *Service) testDeletingLabWithChallenges() error {
 	var errs error
 	log.Debug().Msg("Creating test lab")
 	// try to create a new lab
-	labID, err := s.LabService.CreateLab(ctx, 26)
+	labID, err := s.LabService.CreateLab(ctx, 26, "")
 	if err != nil {
 		return appError.ErrPlatform.WithError(err).WithMessage("Failed to create test lab").Err()
 	}

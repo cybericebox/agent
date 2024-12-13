@@ -12,7 +12,7 @@ import (
 type (
 	// ILabService interface
 	ILabService interface {
-		CreateLab(ctx context.Context, subnetMask uint32) (*model.Lab, error)
+		CreateLab(ctx context.Context, subnetMask uint32, labsGroupID string) (*model.Lab, error)
 		GetLab(ctx context.Context, labID string) (*model.Lab, error)
 		StartLab(ctx context.Context, labID string) error
 		StopLab(ctx context.Context, labID string) error
@@ -22,8 +22,13 @@ type (
 	}
 )
 
-func (u *UseCase) GetLabs(ctx context.Context, labIDs []string) ([]*model.Lab, error) {
+func (u *UseCase) GetLabs(ctx context.Context, labsGroupID string, labIDs []string) ([]*model.Lab, error) {
 	var errs error
+
+	labIDs, err := u.getLabIDs(ctx, labsGroupID, labIDs)
+	if err != nil {
+		return nil, appError.ErrPlatform.WithError(err).WithMessage("Failed to get lab IDs").Err()
+	}
 
 	labs := make([]*model.Lab, 0, len(labIDs))
 
@@ -65,7 +70,7 @@ func (u *UseCase) GetLabsStatus(ctx context.Context) ([]*model.LabStatus, error)
 	return labs, nil
 }
 
-func (u *UseCase) CreateLabs(ctx context.Context, subnetMask uint32, count int) ([]*model.Lab, error) {
+func (u *UseCase) CreateLabs(ctx context.Context, labsGroupID string, subnetMask uint32, count int) ([]*model.Lab, error) {
 	var errs error
 
 	labs := make([]*model.Lab, 0, count)
@@ -76,7 +81,7 @@ func (u *UseCase) CreateLabs(ctx context.Context, subnetMask uint32, count int) 
 		wg.Add(1)
 		u.worker.AddTask(worker.NewTask().
 			WithDo(func() error {
-				lab, err := u.service.CreateLab(ctx, subnetMask)
+				lab, err := u.service.CreateLab(ctx, subnetMask, labsGroupID)
 				if err != nil {
 					errs = multierror.Append(errs, err)
 					return err
@@ -97,8 +102,13 @@ func (u *UseCase) CreateLabs(ctx context.Context, subnetMask uint32, count int) 
 	return labs, nil
 }
 
-func (u *UseCase) StartLabs(ctx context.Context, labIDs []string) error {
+func (u *UseCase) StartLabs(ctx context.Context, labsGroupID string, labIDs []string) error {
 	var errs error
+
+	labIDs, err := u.getLabIDs(ctx, labsGroupID, labIDs)
+	if err != nil {
+		return appError.ErrPlatform.WithError(err).WithMessage("Failed to get lab IDs").Err()
+	}
 
 	wg := new(sync.WaitGroup)
 
@@ -127,8 +137,13 @@ func (u *UseCase) StartLabs(ctx context.Context, labIDs []string) error {
 	return nil
 }
 
-func (u *UseCase) StopLabs(ctx context.Context, labIDs []string) error {
+func (u *UseCase) StopLabs(ctx context.Context, labsGroupID string, labIDs []string) error {
 	var errs error
+
+	labIDs, err := u.getLabIDs(ctx, labsGroupID, labIDs)
+	if err != nil {
+		return appError.ErrPlatform.WithError(err).WithMessage("Failed to get lab IDs").Err()
+	}
 
 	wg := new(sync.WaitGroup)
 
@@ -157,8 +172,13 @@ func (u *UseCase) StopLabs(ctx context.Context, labIDs []string) error {
 	return nil
 }
 
-func (u *UseCase) DeleteLabs(ctx context.Context, labIDs []string) error {
+func (u *UseCase) DeleteLabs(ctx context.Context, labsGroupID string, labIDs []string) error {
 	var errs error
+
+	labIDs, err := u.getLabIDs(ctx, labsGroupID, labIDs)
+	if err != nil {
+		return appError.ErrPlatform.WithError(err).WithMessage("Failed to get lab IDs").Err()
+	}
 
 	wg := new(sync.WaitGroup)
 

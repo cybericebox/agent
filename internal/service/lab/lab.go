@@ -28,7 +28,7 @@ type (
 	}
 
 	IRepository interface {
-		GetLaboratories(ctx context.Context) ([]postgres.Laboratory, error)
+		GetLaboratories(ctx context.Context, groupID uuid.NullUUID) ([]postgres.Laboratory, error)
 		CreateLaboratory(ctx context.Context, laboratory postgres.CreateLaboratoryParams) error
 		DeleteLaboratory(ctx context.Context, id uuid.UUID) (int64, error)
 	}
@@ -93,8 +93,10 @@ func (s *LabService) RestoreLabIfNeeded(ctx context.Context, lab model.Lab) erro
 	return nil
 }
 
-func (s *LabService) GetStoredLabs(ctx context.Context) ([]model.Lab, error) {
-	labs, err := s.repository.GetLaboratories(ctx)
+func (s *LabService) GetStoredLabs(ctx context.Context, labsGroupID string) ([]model.Lab, error) {
+	parsedLabsGroupID := uuid.FromStringOrNil(labsGroupID)
+
+	labs, err := s.repository.GetLaboratories(ctx, uuid.NullUUID{UUID: parsedLabsGroupID, Valid: !parsedLabsGroupID.IsNil()})
 	if err != nil {
 		return nil, appError.ErrPostgres.WithError(err).WithMessage("Failed to get laboratories from state").Err()
 	}
@@ -123,7 +125,7 @@ func (s *LabService) GetStoredLabs(ctx context.Context) ([]model.Lab, error) {
 }
 
 func (s *LabService) GetLab(ctx context.Context, labID string) (*model.Lab, error) {
-	parsedID, err := uuid.FromString(labID)
+	parsedLabID, err := uuid.FromString(labID)
 	if err != nil {
 		return nil, appError.ErrLab.WithError(err).WithMessage("Failed to parse lab id").WithContext("labID", labID).Err()
 	}
@@ -139,7 +141,7 @@ func (s *LabService) GetLab(ctx context.Context, labID string) (*model.Lab, erro
 	}
 
 	lab := &model.Lab{
-		ID:   parsedID,
+		ID:   parsedLabID,
 		CIDR: parsedCIDR,
 	}
 
@@ -151,7 +153,7 @@ func (s *LabService) GetLab(ctx context.Context, labID string) (*model.Lab, erro
 	return lab, nil
 }
 
-func (s *LabService) CreateLab(ctx context.Context, subnetMask uint32) (*model.Lab, error) {
+func (s *LabService) CreateLab(ctx context.Context, subnetMask uint32, labsGroupID string) (*model.Lab, error) {
 	var err error
 
 	lab := &model.Lab{
@@ -232,8 +234,9 @@ func (s *LabService) CreateLab(ctx context.Context, subnetMask uint32) (*model.L
 	}
 
 	if err = s.repository.CreateLaboratory(ctx, postgres.CreateLaboratoryParams{
-		ID:   lab.ID,
-		Cidr: cidr,
+		ID:      lab.ID,
+		Cidr:    cidr,
+		GroupID: uuid.FromStringOrNil(labsGroupID),
 	}); err != nil {
 		if err1 := s.DeleteLab(ctx, lab.ID.String()); err1 != nil {
 			return nil, appError.ErrLab.WithError(err1).WithMessage("Failed to delete lab in create lab").WithContext("labID", lab.ID.String()).Err()
@@ -425,10 +428,10 @@ func (s *LabService) DeleteLabChallenges(ctx context.Context, labID string, chal
 	}
 
 	labRecords := make([]model.DNSRecordConfig, 0)
-	for _, challengeId := range challengeIDs {
-		records, err := s.service.DeleteChallenge(ctx, lab, challengeId)
+	for _, challengeID := range challengeIDs {
+		records, err := s.service.DeleteChallenge(ctx, lab, challengeID)
 		if err != nil {
-			errs = multierror.Append(errs, appError.ErrLab.WithError(err).WithMessage("Failed to delete challenge").WithContext("labID", labID).WithContext("challengeID", challengeId).Err())
+			errs = multierror.Append(errs, appError.ErrLab.WithError(err).WithMessage("Failed to delete challenge").WithContext("labID", labID).WithContext("challengeID", challengeID).Err())
 		}
 
 		labRecords = append(labRecords, records...)

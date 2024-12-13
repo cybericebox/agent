@@ -13,7 +13,7 @@ import (
 type Querier interface {
 	CreateLaboratory(ctx context.Context, arg CreateLaboratoryParams) error
 	DeleteLaboratory(ctx context.Context, id uuid.UUID) (int64, error)
-	GetLaboratories(ctx context.Context) ([]Laboratory, error)
+	GetLaboratories(ctx context.Context, groupID uuid.NullUUID) ([]Laboratory, error)
 }
 
 var _ Querier = (*Queries)(nil)
