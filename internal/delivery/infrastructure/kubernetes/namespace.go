@@ -18,7 +18,11 @@ func (k *Kubernetes) ApplyNamespace(ctx context.Context, name string, ipPoolName
 
 	if _, err := k.kubeClient.CoreV1().Namespaces().Apply(
 		ctx,
-		v1.Namespace(name).WithAnnotations(annotations).WithLabels(map[string]string{config.PlatformLabel: config.Lab, config.LabIDLabel: name}),
+		v1.Namespace(name).WithAnnotations(annotations).WithLabels(
+			map[string]string{
+				config.PlatformLabel: config.Lab,
+				config.LabIDLabel:    name,
+			}),
 		metaV1.ApplyOptions{FieldManager: "application/apply-patch"}); err != nil {
 		return appError.ErrKubernetes.WithError(err).WithMessage("Failed to apply namespace").Err()
 	}

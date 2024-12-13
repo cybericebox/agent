@@ -8,11 +8,11 @@ import (
 )
 
 type IChallengeUseCase interface {
-	AddLabsChallenges(ctx context.Context, labIDs []string, configs []model.ChallengeConfig, flagsEnvVars map[string]map[string]map[string]model.EnvConfig) error
-	StartLabsChallenges(ctx context.Context, labIDs, challengeIDs []string) error
-	StopLabsChallenges(ctx context.Context, labIDs, challengeIDs []string) error
-	ResetLabsChallenges(ctx context.Context, labIDs, challengeIDs []string) error
-	DeleteLabsChallenges(ctx context.Context, labIDs, challengeIDs []string) error
+	AddLabsChallenges(ctx context.Context, labsGroupID string, labIDs []string, configs []model.ChallengeConfig, flagsEnvVars map[string]map[string]map[string]model.EnvConfig) error
+	StartLabsChallenges(ctx context.Context, labsGroupID string, labIDs, challengeIDs []string) error
+	StopLabsChallenges(ctx context.Context, labsGroupID string, labIDs, challengeIDs []string) error
+	ResetLabsChallenges(ctx context.Context, labsGroupID string, labIDs, challengeIDs []string) error
+	DeleteLabsChallenges(ctx context.Context, labsGroupID string, labIDs, challengeIDs []string) error
 }
 
 func (a *Agent) AddLabsChallenges(ctx context.Context, request *protobuf.AddLabsChallengesRequest) (*protobuf.EmptyResponse, error) {
@@ -75,7 +75,7 @@ func (a *Agent) AddLabsChallenges(ctx context.Context, request *protobuf.AddLabs
 		}
 	}
 
-	if err := a.useCase.AddLabsChallenges(ctx, request.GetLabIDs(), challengesConfigs, flagEnvVariables); err != nil {
+	if err := a.useCase.AddLabsChallenges(ctx, request.GetLabsGroupID(), request.GetLabIDs(), challengesConfigs, flagEnvVariables); err != nil {
 		log.Error().Err(err).Msg("Failed to add lab challenges")
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func (a *Agent) AddLabsChallenges(ctx context.Context, request *protobuf.AddLabs
 }
 
 func (a *Agent) DeleteLabsChallenges(ctx context.Context, request *protobuf.LabsChallengesRequest) (*protobuf.EmptyResponse, error) {
-	if err := a.useCase.DeleteLabsChallenges(ctx, request.GetLabIDs(), request.GetChallengeIDs()); err != nil {
+	if err := a.useCase.DeleteLabsChallenges(ctx, request.GetLabsGroupID(), request.GetLabIDs(), request.GetChallengeIDs()); err != nil {
 		log.Error().Err(err).Msg("Failed to delete lab challenges")
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (a *Agent) DeleteLabsChallenges(ctx context.Context, request *protobuf.Labs
 }
 
 func (a *Agent) StartLabsChallenges(ctx context.Context, request *protobuf.LabsChallengesRequest) (*protobuf.EmptyResponse, error) {
-	if err := a.useCase.StartLabsChallenges(ctx, request.GetLabIDs(), request.GetChallengeIDs()); err != nil {
+	if err := a.useCase.StartLabsChallenges(ctx, request.GetLabsGroupID(), request.GetLabIDs(), request.GetChallengeIDs()); err != nil {
 		log.Error().Err(err).Msg("Failed to start lab challenges")
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (a *Agent) StartLabsChallenges(ctx context.Context, request *protobuf.LabsC
 }
 
 func (a *Agent) StopLabsChallenges(ctx context.Context, request *protobuf.LabsChallengesRequest) (*protobuf.EmptyResponse, error) {
-	if err := a.useCase.StopLabsChallenges(ctx, request.GetLabIDs(), request.GetChallengeIDs()); err != nil {
+	if err := a.useCase.StopLabsChallenges(ctx, request.GetLabsGroupID(), request.GetLabIDs(), request.GetChallengeIDs()); err != nil {
 		log.Error().Err(err).Msg("Failed to stop lab challenges")
 		return nil, err
 	}
@@ -111,7 +111,7 @@ func (a *Agent) StopLabsChallenges(ctx context.Context, request *protobuf.LabsCh
 }
 
 func (a *Agent) ResetLabsChallenges(ctx context.Context, request *protobuf.LabsChallengesRequest) (*protobuf.EmptyResponse, error) {
-	if err := a.useCase.ResetLabsChallenges(ctx, request.GetLabIDs(), request.GetChallengeIDs()); err != nil {
+	if err := a.useCase.ResetLabsChallenges(ctx, request.GetLabsGroupID(), request.GetLabIDs(), request.GetChallengeIDs()); err != nil {
 		log.Error().Err(err).Msg("Failed to reset lab challenges")
 		return nil, err
 	}

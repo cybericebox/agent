@@ -9,6 +9,7 @@ const (
 
 const (
 	PlatformLabel    = "cybericebox"
+	LabGroupIDLabel  = "labGroupID"
 	LabIDLabel       = "labID"
 	ChallengeIDLabel = "challengeID"
 	InstanceIDLabel  = "instanceID"

@@ -21,11 +21,13 @@ type (
 
 	Lab struct {
 		ID          uuid.UUID
+		GroupID     uuid.UUID
 		CIDRManager *ipam.IPAManager
 		CIDR        netip.Prefix
 	}
 	LabStatus struct {
 		ID        uuid.UUID
+		GroupID   uuid.UUID
 		CIDR      string
 		DNS       *DNSStatus
 		Instances []InstanceStatus

@@ -16,7 +16,7 @@ type (
 	}
 
 	IRepository interface {
-		GetLaboratories(ctx context.Context) ([]postgres.Laboratory, error)
+		GetLaboratories(ctx context.Context, groupID uuid.NullUUID) ([]postgres.Laboratory, error)
 	}
 
 	Dependencies struct {
@@ -38,7 +38,7 @@ func NewPlatformService(deps Dependencies) *PlatformService {
 }
 
 func (s *PlatformService) GetLabsStatus(ctx context.Context) ([]*model.LabStatus, error) {
-	labs, err := s.repository.GetLaboratories(ctx)
+	labs, err := s.repository.GetLaboratories(ctx, uuid.NullUUID{})
 	if err != nil {
 		return nil, appError.ErrPlatform.WithError(err).WithMessage("Failed to get all laboratories").Err()
 	}
@@ -47,6 +47,7 @@ func (s *PlatformService) GetLabsStatus(ctx context.Context) ([]*model.LabStatus
 	for _, lab := range labs {
 		labsMap[lab.ID.String()] = &model.LabStatus{
 			ID:        lab.ID,
+			GroupID:   lab.GroupID,
 			CIDR:      lab.Cidr.String(),
 			DNS:       &model.DNSStatus{},
 			Instances: make([]model.InstanceStatus, 0),

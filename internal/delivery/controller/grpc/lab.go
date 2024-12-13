@@ -9,16 +9,16 @@ import (
 
 type (
 	ILabUseCase interface {
-		CreateLabs(ctx context.Context, subnetMask uint32, count int) ([]*model.Lab, error)
-		GetLabs(ctx context.Context, labIDs []string) ([]*model.Lab, error)
-		DeleteLabs(ctx context.Context, labIDs []string) error
-		StartLabs(ctx context.Context, labIDs []string) error
-		StopLabs(ctx context.Context, labIDs []string) error
+		CreateLabs(ctx context.Context, labsGroupID string, subnetMask uint32, count int) ([]*model.Lab, error)
+		GetLabs(ctx context.Context, labsGroupID string, labIDs []string) ([]*model.Lab, error)
+		DeleteLabs(ctx context.Context, labsGroupID string, labIDs []string) error
+		StartLabs(ctx context.Context, labsGroupID string, labIDs []string) error
+		StopLabs(ctx context.Context, labsGroupID string, labIDs []string) error
 	}
 )
 
 func (a *Agent) GetLabs(ctx context.Context, request *protobuf.LabsRequest) (*protobuf.GetLabsResponse, error) {
-	labs, err := a.useCase.GetLabs(ctx, request.GetIDs())
+	labs, err := a.useCase.GetLabs(ctx, request.GetLabsGroupID(), request.GetIDs())
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to get labs")
 		return nil, err
@@ -38,7 +38,7 @@ func (a *Agent) GetLabs(ctx context.Context, request *protobuf.LabsRequest) (*pr
 }
 
 func (a *Agent) CreateLabs(ctx context.Context, request *protobuf.CreateLabsRequest) (*protobuf.CreateLabsResponse, error) {
-	labs, err := a.useCase.CreateLabs(ctx, request.GetCIDRMask(), int(request.GetCount()))
+	labs, err := a.useCase.CreateLabs(ctx, request.GetLabsGroupID(), request.GetCIDRMask(), int(request.GetCount()))
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to create labs")
 		return nil, err
@@ -58,7 +58,7 @@ func (a *Agent) CreateLabs(ctx context.Context, request *protobuf.CreateLabsRequ
 }
 
 func (a *Agent) StartLabs(ctx context.Context, request *protobuf.LabsRequest) (*protobuf.EmptyResponse, error) {
-	if err := a.useCase.StartLabs(ctx, request.GetIDs()); err != nil {
+	if err := a.useCase.StartLabs(ctx, request.GetLabsGroupID(), request.GetIDs()); err != nil {
 		log.Error().Err(err).Msg("Failed to start labs")
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func (a *Agent) StartLabs(ctx context.Context, request *protobuf.LabsRequest) (*
 }
 
 func (a *Agent) StopLabs(ctx context.Context, request *protobuf.LabsRequest) (*protobuf.EmptyResponse, error) {
-	if err := a.useCase.StopLabs(ctx, request.GetIDs()); err != nil {
+	if err := a.useCase.StopLabs(ctx, request.GetLabsGroupID(), request.GetIDs()); err != nil {
 		log.Error().Err(err).Msg("Failed to stop labs")
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func (a *Agent) StopLabs(ctx context.Context, request *protobuf.LabsRequest) (*p
 }
 
 func (a *Agent) DeleteLabs(ctx context.Context, request *protobuf.LabsRequest) (*protobuf.EmptyResponse, error) {
-	if err := a.useCase.DeleteLabs(ctx, request.GetIDs()); err != nil {
+	if err := a.useCase.DeleteLabs(ctx, request.GetLabsGroupID(), request.GetIDs()); err != nil {
 		log.Error().Err(err).Msg("Failed to delete labs")
 		return nil, err
 	}

@@ -11,7 +11,7 @@ import (
 
 type (
 	IRestoreService interface {
-		GetStoredLabs(ctx context.Context) ([]model.Lab, error)
+		GetStoredLabs(ctx context.Context, labsGroupID string) ([]model.Lab, error)
 		RestoreLabIfNeeded(ctx context.Context, lab model.Lab) error
 	}
 )
@@ -25,7 +25,7 @@ func (u *UseCase) Restore() error {
 
 func (u *UseCase) RestoreLabsFromState(ctx context.Context) error {
 	// get all the labs in the state
-	labs, err := u.service.GetStoredLabs(ctx)
+	labs, err := u.service.GetStoredLabs(ctx, "")
 	if err != nil {
 		return appError.ErrPlatform.WithError(err).WithMessage("Failed to get stored labs").Err()
 	}

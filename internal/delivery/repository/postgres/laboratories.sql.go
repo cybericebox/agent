@@ -13,17 +13,18 @@ import (
 )
 
 const createLaboratory = `-- name: CreateLaboratory :exec
-insert into laboratories (id, cidr)
-values ($1, $2)
+insert into laboratories (id, group_id, cidr)
+values ($1, $2, $3)
 `
 
 type CreateLaboratoryParams struct {
-	ID   uuid.UUID    `json:"id"`
-	Cidr netip.Prefix `json:"cidr"`
+	ID      uuid.UUID    `json:"id"`
+	GroupID uuid.UUID    `json:"group_id"`
+	Cidr    netip.Prefix `json:"cidr"`
 }
 
 func (q *Queries) CreateLaboratory(ctx context.Context, arg CreateLaboratoryParams) error {
-	_, err := q.db.Exec(ctx, createLaboratory, arg.ID, arg.Cidr)
+	_, err := q.db.Exec(ctx, createLaboratory, arg.ID, arg.GroupID, arg.Cidr)
 	return err
 }
 
@@ -42,12 +43,13 @@ func (q *Queries) DeleteLaboratory(ctx context.Context, id uuid.UUID) (int64, er
 }
 
 const getLaboratories = `-- name: GetLaboratories :many
-select id, cidr, updated_at, created_at
+select id, group_id, cidr, updated_at, created_at
 from laboratories
+where group_id = coalesce($1, group_id)
 `
 
-func (q *Queries) GetLaboratories(ctx context.Context) ([]Laboratory, error) {
-	rows, err := q.db.Query(ctx, getLaboratories)
+func (q *Queries) GetLaboratories(ctx context.Context, groupID uuid.NullUUID) ([]Laboratory, error) {
+	rows, err := q.db.Query(ctx, getLaboratories, groupID)
 	if err != nil {
 		return nil, err
 	}
@@ -57,6 +59,7 @@ func (q *Queries) GetLaboratories(ctx context.Context) ([]Laboratory, error) {
 		var i Laboratory
 		if err := rows.Scan(
 			&i.ID,
+			&i.GroupID,
 			&i.Cidr,
 			&i.UpdatedAt,
 			&i.CreatedAt,

@@ -33,21 +33,25 @@ message EmptyResponse {}
 message CreateLabsRequest {
   uint32 CIDRMask = 1;
   uint32 Count = 2;
+  string LabsGroupID = 3;
 }
 
 message LabsRequest {
   repeated string IDs = 1;
+  string LabsGroupID = 2;
 }
 
 message AddLabsChallengesRequest {
   repeated string LabIDs = 1;
-  repeated Challenge Challenges = 2;
-  repeated FlagEnvVariable FlagEnvVariables = 3;
+  string LabsGroupID = 2;
+  repeated Challenge Challenges = 3;
+  repeated FlagEnvVariable FlagEnvVariables = 4;
 }
 
 message LabsChallengesRequest {
   repeated string LabIDs = 1;
-  repeated string ChallengeIDs = 2;
+  string LabsGroupID = 2;
+  repeated string ChallengeIDs = 3;
 }
 
 message CreateLabsResponse {
@@ -64,14 +68,16 @@ message MonitoringResponse {
 
 message Lab {
   string ID = 1;
-  string CIDR = 2;
+  string GroupID = 2;
+  string CIDR = 3;
 }
 
 message LabStatus {
   string ID = 1;
-  string CIDR = 2;
-  DNSStatus DNS = 3;
-  repeated InstanceStatus Instances = 4;
+  string GroupID = 2;
+  string CIDR = 3;
+  DNSStatus DNS = 4;
+  repeated InstanceStatus Instances = 5;
 }
 
 message DNSStatus {
